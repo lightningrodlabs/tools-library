@@ -1,16 +1,24 @@
 use hdi::prelude::*;
 #[hdk_entry_helper]
 #[derive(Clone, PartialEq)]
-pub struct ContributorPermission {
-    pub for_collective: ActionHash,
-    pub for_agent: AgentPubKey,
-    pub expiry: Option<Timestamp>,
+pub struct Tool {
+    pub developer_collective: ActionHash,
+    pub permission_hash: ActionHash,
+    pub title: String,
+    pub subtitle: String,
+    pub description: String,
+    pub icon: String,
+    pub source: String,
+    pub hashes: String,
+    pub changelog: Option<String>,
+    pub meta_data: Option<String>,
+    pub deprecation: Option<String>,
 }
-pub fn validate_create_contributor_permission(
+pub fn validate_create_tool(
     _action: EntryCreationAction,
-    contributor_permission: ContributorPermission,
+    tool: Tool,
 ) -> ExternResult<ValidateCallbackResult> {
-    let record = must_get_valid_record(contributor_permission.for_collective.clone())?;
+    let record = must_get_valid_record(tool.developer_collective.clone())?;
     let _developer_collective: crate::DeveloperCollective = record
         .entry()
         .to_app_option()
@@ -22,30 +30,22 @@ pub fn validate_create_contributor_permission(
         )?;
     Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_update_contributor_permission(
+pub fn validate_update_tool(
     _action: Update,
-    _contributor_permission: ContributorPermission,
+    _tool: Tool,
     _original_action: EntryCreationAction,
-    _original_contributor_permission: ContributorPermission,
+    _original_tool: Tool,
 ) -> ExternResult<ValidateCallbackResult> {
-    Ok(
-        ValidateCallbackResult::Invalid(
-            String::from("Contributor Permissions cannot be updated"),
-        ),
-    )
+    Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_delete_contributor_permission(
+pub fn validate_delete_tool(
     _action: Delete,
     _original_action: EntryCreationAction,
-    _original_contributor_permission: ContributorPermission,
+    _original_tool: Tool,
 ) -> ExternResult<ValidateCallbackResult> {
-    Ok(
-        ValidateCallbackResult::Invalid(
-            String::from("Contributor Permissions cannot be deleted"),
-        ),
-    )
+    Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_create_link_developer_collective_to_contributor_permissions(
+pub fn validate_create_link_developer_collective_to_tools(
     _action: CreateLink,
     base_address: AnyLinkableHash,
     target_address: AnyLinkableHash,
@@ -77,7 +77,7 @@ pub fn validate_create_link_developer_collective_to_contributor_permissions(
             ),
         )?;
     let record = must_get_valid_record(action_hash)?;
-    let _contributor_permission: crate::ContributorPermission = record
+    let _tool: crate::Tool = record
         .entry()
         .to_app_option()
         .map_err(|e| wasm_error!(e))?
@@ -89,27 +89,41 @@ pub fn validate_create_link_developer_collective_to_contributor_permissions(
         )?;
     Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_delete_link_developer_collective_to_contributor_permissions(
+pub fn validate_delete_link_developer_collective_to_tools(
     _action: DeleteLink,
     _original_action: CreateLink,
     _base: AnyLinkableHash,
     _target: AnyLinkableHash,
     _tag: LinkTag,
 ) -> ExternResult<ValidateCallbackResult> {
-    Ok(
-        ValidateCallbackResult::Invalid(
-            String::from(
-                "DeveloperCollectiveToContributorPermissions links cannot be deleted",
-            ),
-        ),
-    )
+    Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_create_link_contributor_to_contributor_permissions(
+pub fn validate_create_link_tool_updates(
     _action: CreateLink,
-    _base_address: AnyLinkableHash,
+    base_address: AnyLinkableHash,
     target_address: AnyLinkableHash,
     _tag: LinkTag,
 ) -> ExternResult<ValidateCallbackResult> {
+    // Check the entry type for the given action hash
+    let action_hash = base_address
+        .into_action_hash()
+        .ok_or(
+            wasm_error!(
+                WasmErrorInner::Guest("No action hash associated with link".to_string())
+            ),
+        )?;
+    let record = must_get_valid_record(action_hash)?;
+    let _tool: crate::Tool = record
+        .entry()
+        .to_app_option()
+        .map_err(|e| wasm_error!(e))?
+        .ok_or(
+            wasm_error!(
+                WasmErrorInner::Guest("Linked action must reference an entry"
+                .to_string())
+            ),
+        )?;
+    // Check the entry type for the given action hash
     let action_hash = target_address
         .into_action_hash()
         .ok_or(
@@ -118,7 +132,7 @@ pub fn validate_create_link_contributor_to_contributor_permissions(
             ),
         )?;
     let record = must_get_valid_record(action_hash)?;
-    let _contributor_permission: crate::ContributorPermission = record
+    let _tool: crate::Tool = record
         .entry()
         .to_app_option()
         .map_err(|e| wasm_error!(e))?
@@ -128,9 +142,10 @@ pub fn validate_create_link_contributor_to_contributor_permissions(
                 .to_string())
             ),
         )?;
+    // TODO: add the appropriate validation rules
     Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_delete_link_contributor_to_contributor_permissions(
+pub fn validate_delete_link_tool_updates(
     _action: DeleteLink,
     _original_action: CreateLink,
     _base: AnyLinkableHash,
@@ -139,7 +154,7 @@ pub fn validate_delete_link_contributor_to_contributor_permissions(
 ) -> ExternResult<ValidateCallbackResult> {
     Ok(
         ValidateCallbackResult::Invalid(
-            String::from("ContributorToContributorPermissions links cannot be deleted"),
+            String::from("ToolUpdates links cannot be deleted"),
         ),
     )
 }

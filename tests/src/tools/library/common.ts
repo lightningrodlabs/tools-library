@@ -70,3 +70,32 @@ export async function createContributorPermission(cell: CallableCell, contributo
     });
 }
 
+
+
+export async function sampleTool(cell: CallableCell, partialTool = {}) {
+    return {
+        ...{
+          developer_collective: (await createDeveloperCollective(cell)).signed_action.hashed.hash,
+	  permission_hash: (await fakeActionHash()),
+	  title: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  subtitle: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  icon: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  source: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  hashes: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  changelog: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  meta_data: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  deprecation: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        },
+        ...partialTool
+    };
+}
+
+export async function createTool(cell: CallableCell, tool = undefined): Promise<Record> {
+    return cell.callZome({
+      zome_name: "library",
+      fn_name: "create_tool",
+      payload: tool || await sampleTool(cell),
+    });
+}
+

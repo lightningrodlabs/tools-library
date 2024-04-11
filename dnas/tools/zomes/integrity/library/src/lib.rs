@@ -1,3 +1,5 @@
+pub mod tool;
+pub use tool::*;
 pub mod contributor_permission;
 pub use contributor_permission::*;
 pub mod developer_collective;
@@ -13,6 +15,7 @@ pub enum EntryTypes {
     Curator(Curator),
     DeveloperCollective(DeveloperCollective),
     ContributorPermission(ContributorPermission),
+    Tool(Tool),
 }
 #[derive(Serialize, Deserialize)]
 #[hdk_link_types]
@@ -21,6 +24,8 @@ pub enum LinkTypes {
     DeveloperCollectiveUpdates,
     DeveloperCollectiveToContributorPermissions,
     ContributorToContributorPermissions,
+    DeveloperCollectiveToTools,
+    ToolUpdates,
 }
 #[hdk_extern]
 pub fn genesis_self_check(
@@ -59,6 +64,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 contributor_permission,
                             )
                         }
+                        EntryTypes::Tool(tool) => {
+                            validate_create_tool(
+                                EntryCreationAction::Create(action),
+                                tool,
+                            )
+                        }
                     }
                 }
                 OpEntry::UpdateEntry { app_entry, action, .. } => {
@@ -81,6 +92,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 contributor_permission,
                             )
                         }
+                        EntryTypes::Tool(tool) => {
+                            validate_create_tool(
+                                EntryCreationAction::Update(action),
+                                tool,
+                            )
+                        }
                     }
                 }
                 _ => Ok(ValidateCallbackResult::Valid),
@@ -95,6 +112,14 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     action,
                 } => {
                     match (app_entry, original_app_entry) {
+                        (EntryTypes::Tool(tool), EntryTypes::Tool(original_tool)) => {
+                            validate_update_tool(
+                                action,
+                                tool,
+                                original_action,
+                                original_tool,
+                            )
+                        }
                         (
                             EntryTypes::ContributorPermission(contributor_permission),
                             EntryTypes::ContributorPermission(
@@ -166,6 +191,9 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 contributor_permission,
                             )
                         }
+                        EntryTypes::Tool(tool) => {
+                            validate_delete_tool(action, original_action, tool)
+                        }
                     }
                 }
                 _ => Ok(ValidateCallbackResult::Valid),
@@ -205,6 +233,22 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 }
                 LinkTypes::ContributorToContributorPermissions => {
                     validate_create_link_contributor_to_contributor_permissions(
+                        action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
+                LinkTypes::DeveloperCollectiveToTools => {
+                    validate_create_link_developer_collective_to_tools(
+                        action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
+                LinkTypes::ToolUpdates => {
+                    validate_create_link_tool_updates(
                         action,
                         base_address,
                         target_address,
@@ -258,6 +302,24 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         tag,
                     )
                 }
+                LinkTypes::DeveloperCollectiveToTools => {
+                    validate_delete_link_developer_collective_to_tools(
+                        action,
+                        original_action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
+                LinkTypes::ToolUpdates => {
+                    validate_delete_link_tool_updates(
+                        action,
+                        original_action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
             }
         }
         FlatOp::StoreRecord(store_record) => {
@@ -280,6 +342,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                             validate_create_contributor_permission(
                                 EntryCreationAction::Create(action),
                                 contributor_permission,
+                            )
+                        }
+                        EntryTypes::Tool(tool) => {
+                            validate_create_tool(
+                                EntryCreationAction::Create(action),
+                                tool,
                             )
                         }
                     }
@@ -402,6 +470,37 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 Ok(result)
                             }
                         }
+                        EntryTypes::Tool(tool) => {
+                            let result = validate_create_tool(
+                                EntryCreationAction::Update(action.clone()),
+                                tool.clone(),
+                            )?;
+                            if let ValidateCallbackResult::Valid = result {
+                                let original_tool: Option<Tool> = original_record
+                                    .entry()
+                                    .to_app_option()
+                                    .map_err(|e| wasm_error!(e))?;
+                                let original_tool = match original_tool {
+                                    Some(tool) => tool,
+                                    None => {
+                                        return Ok(
+                                            ValidateCallbackResult::Invalid(
+                                                "The updated entry type must be the same as the original entry type"
+                                                    .to_string(),
+                                            ),
+                                        );
+                                    }
+                                };
+                                validate_update_tool(
+                                    action,
+                                    tool,
+                                    original_action,
+                                    original_tool,
+                                )
+                            } else {
+                                Ok(result)
+                            }
+                        }
                     }
                 }
                 OpRecord::DeleteEntry { original_action_hash, action, .. } => {
@@ -481,6 +580,9 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 original_contributor_permission,
                             )
                         }
+                        EntryTypes::Tool(original_tool) => {
+                            validate_delete_tool(action, original_action, original_tool)
+                        }
                     }
                 }
                 OpRecord::CreateLink {
@@ -517,6 +619,22 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         }
                         LinkTypes::ContributorToContributorPermissions => {
                             validate_create_link_contributor_to_contributor_permissions(
+                                action,
+                                base_address,
+                                target_address,
+                                tag,
+                            )
+                        }
+                        LinkTypes::DeveloperCollectiveToTools => {
+                            validate_create_link_developer_collective_to_tools(
+                                action,
+                                base_address,
+                                target_address,
+                                tag,
+                            )
+                        }
+                        LinkTypes::ToolUpdates => {
+                            validate_create_link_tool_updates(
                                 action,
                                 base_address,
                                 target_address,
@@ -577,6 +695,24 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         }
                         LinkTypes::ContributorToContributorPermissions => {
                             validate_delete_link_contributor_to_contributor_permissions(
+                                action,
+                                create_link.clone(),
+                                base_address,
+                                create_link.target_address,
+                                create_link.tag,
+                            )
+                        }
+                        LinkTypes::DeveloperCollectiveToTools => {
+                            validate_delete_link_developer_collective_to_tools(
+                                action,
+                                create_link.clone(),
+                                base_address,
+                                create_link.target_address,
+                                create_link.tag,
+                            )
+                        }
+                        LinkTypes::ToolUpdates => {
+                            validate_delete_link_tool_updates(
                                 action,
                                 create_link.clone(),
                                 base_address,
