@@ -1,3 +1,5 @@
+pub mod curator_to_developer_collectives;
+pub use curator_to_developer_collectives::*;
 pub mod tool;
 pub use tool::*;
 pub mod contributor_permission;
@@ -26,6 +28,8 @@ pub enum LinkTypes {
     ContributorToContributorPermissions,
     DeveloperCollectiveToTools,
     ToolUpdates,
+    CuratorToDeveloperCollectives,
+    DeveloperCollectiveToCurators,
 }
 #[hdk_extern]
 pub fn genesis_self_check(
@@ -255,6 +259,22 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         tag,
                     )
                 }
+                LinkTypes::CuratorToDeveloperCollectives => {
+                    validate_create_link_curator_to_developer_collectives(
+                        action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
+                LinkTypes::DeveloperCollectiveToCurators => {
+                    validate_create_link_developer_collective_to_curators(
+                        action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
             }
         }
         FlatOp::RegisterDeleteLink {
@@ -313,6 +333,24 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 }
                 LinkTypes::ToolUpdates => {
                     validate_delete_link_tool_updates(
+                        action,
+                        original_action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
+                LinkTypes::CuratorToDeveloperCollectives => {
+                    validate_delete_link_curator_to_developer_collectives(
+                        action,
+                        original_action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
+                LinkTypes::DeveloperCollectiveToCurators => {
+                    validate_delete_link_developer_collective_to_curators(
                         action,
                         original_action,
                         base_address,
@@ -641,6 +679,22 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 tag,
                             )
                         }
+                        LinkTypes::CuratorToDeveloperCollectives => {
+                            validate_create_link_curator_to_developer_collectives(
+                                action,
+                                base_address,
+                                target_address,
+                                tag,
+                            )
+                        }
+                        LinkTypes::DeveloperCollectiveToCurators => {
+                            validate_create_link_developer_collective_to_curators(
+                                action,
+                                base_address,
+                                target_address,
+                                tag,
+                            )
+                        }
                     }
                 }
                 OpRecord::DeleteLink { original_action_hash, base_address, action } => {
@@ -713,6 +767,24 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         }
                         LinkTypes::ToolUpdates => {
                             validate_delete_link_tool_updates(
+                                action,
+                                create_link.clone(),
+                                base_address,
+                                create_link.target_address,
+                                create_link.tag,
+                            )
+                        }
+                        LinkTypes::CuratorToDeveloperCollectives => {
+                            validate_delete_link_curator_to_developer_collectives(
+                                action,
+                                create_link.clone(),
+                                base_address,
+                                create_link.target_address,
+                                create_link.tag,
+                            )
+                        }
+                        LinkTypes::DeveloperCollectiveToCurators => {
+                            validate_delete_link_developer_collective_to_curators(
                                 action,
                                 create_link.clone(),
                                 base_address,
