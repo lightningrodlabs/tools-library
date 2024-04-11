@@ -19,15 +19,14 @@ pub fn validate_create_tool(
     tool: Tool,
 ) -> ExternResult<ValidateCallbackResult> {
     let record = must_get_valid_record(tool.developer_collective.clone())?;
+    // TODO get permission entry here and compare for_agent field with the tool creator
     let _developer_collective: crate::DeveloperCollective = record
         .entry()
         .to_app_option()
         .map_err(|e| wasm_error!(e))?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest(String::from("Dependant action must be accompanied by an entry"))
-            ),
-        )?;
+        .ok_or(wasm_error!(WasmErrorInner::Guest(String::from(
+            "Dependant action must be accompanied by an entry"
+        ))))?;
     Ok(ValidateCallbackResult::Valid)
 }
 pub fn validate_update_tool(
@@ -53,40 +52,31 @@ pub fn validate_create_link_developer_collective_to_tools(
 ) -> ExternResult<ValidateCallbackResult> {
     let action_hash = base_address
         .into_action_hash()
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest("No action hash associated with link".to_string())
-            ),
-        )?;
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "No action hash associated with link".to_string()
+        )))?;
     let record = must_get_valid_record(action_hash)?;
     let _developer_collective: crate::DeveloperCollective = record
         .entry()
         .to_app_option()
         .map_err(|e| wasm_error!(e))?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest("Linked action must reference an entry"
-                .to_string())
-            ),
-        )?;
-    let action_hash = target_address
-        .into_action_hash()
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest("No action hash associated with link".to_string())
-            ),
-        )?;
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "Linked action must reference an entry".to_string()
+        )))?;
+    let action_hash =
+        target_address
+            .into_action_hash()
+            .ok_or(wasm_error!(WasmErrorInner::Guest(
+                "No action hash associated with link".to_string()
+            )))?;
     let record = must_get_valid_record(action_hash)?;
     let _tool: crate::Tool = record
         .entry()
         .to_app_option()
         .map_err(|e| wasm_error!(e))?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest("Linked action must reference an entry"
-                .to_string())
-            ),
-        )?;
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "Linked action must reference an entry".to_string()
+        )))?;
     Ok(ValidateCallbackResult::Valid)
 }
 pub fn validate_delete_link_developer_collective_to_tools(
@@ -107,41 +97,32 @@ pub fn validate_create_link_tool_updates(
     // Check the entry type for the given action hash
     let action_hash = base_address
         .into_action_hash()
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest("No action hash associated with link".to_string())
-            ),
-        )?;
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "No action hash associated with link".to_string()
+        )))?;
     let record = must_get_valid_record(action_hash)?;
     let _tool: crate::Tool = record
         .entry()
         .to_app_option()
         .map_err(|e| wasm_error!(e))?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest("Linked action must reference an entry"
-                .to_string())
-            ),
-        )?;
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "Linked action must reference an entry".to_string()
+        )))?;
     // Check the entry type for the given action hash
-    let action_hash = target_address
-        .into_action_hash()
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest("No action hash associated with link".to_string())
-            ),
-        )?;
+    let action_hash =
+        target_address
+            .into_action_hash()
+            .ok_or(wasm_error!(WasmErrorInner::Guest(
+                "No action hash associated with link".to_string()
+            )))?;
     let record = must_get_valid_record(action_hash)?;
     let _tool: crate::Tool = record
         .entry()
         .to_app_option()
         .map_err(|e| wasm_error!(e))?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest("Linked action must reference an entry"
-                .to_string())
-            ),
-        )?;
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "Linked action must reference an entry".to_string()
+        )))?;
     // TODO: add the appropriate validation rules
     Ok(ValidateCallbackResult::Valid)
 }
@@ -152,9 +133,7 @@ pub fn validate_delete_link_tool_updates(
     _target: AnyLinkableHash,
     _tag: LinkTag,
 ) -> ExternResult<ValidateCallbackResult> {
-    Ok(
-        ValidateCallbackResult::Invalid(
-            String::from("ToolUpdates links cannot be deleted"),
-        ),
-    )
+    Ok(ValidateCallbackResult::Invalid(String::from(
+        "ToolUpdates links cannot be deleted",
+    )))
 }

@@ -7,25 +7,18 @@ pub fn create_tool(tool: Tool) -> ExternResult<Record> {
         tool.developer_collective.clone(),
         tool_hash.clone(),
         LinkTypes::DeveloperCollectiveToTools,
+        // TODO add a tag containing the permission action hash here
         (),
     )?;
-    let record = get(tool_hash.clone(), GetOptions::default())?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest("Could not find the newly created Tool"
-                .to_string())
-            ),
-        )?;
+    let record = get(tool_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(
+        WasmErrorInner::Guest("Could not find the newly created Tool".to_string())
+    ))?;
     Ok(record)
 }
 #[hdk_extern]
 pub fn get_latest_tool(original_tool_hash: ActionHash) -> ExternResult<Option<Record>> {
     let links = get_links(
-        GetLinksInputBuilder::try_new(
-                original_tool_hash.clone(),
-                LinkTypes::ToolUpdates,
-            )?
-            .build(),
+        GetLinksInputBuilder::try_new(original_tool_hash.clone(), LinkTypes::ToolUpdates)?.build(),
     )?;
     let latest_link = links
         .into_iter()
@@ -35,66 +28,47 @@ pub fn get_latest_tool(original_tool_hash: ActionHash) -> ExternResult<Option<Re
             link.target
                 .clone()
                 .into_action_hash()
-                .ok_or(
-                    wasm_error!(
-                        WasmErrorInner::Guest("No action hash associated with link"
-                        .to_string())
-                    ),
-                )?
+                .ok_or(wasm_error!(WasmErrorInner::Guest(
+                    "No action hash associated with link".to_string()
+                )))?
         }
         None => original_tool_hash.clone(),
     };
     get(latest_tool_hash, GetOptions::default())
 }
 #[hdk_extern]
-pub fn get_original_tool(
-    original_tool_hash: ActionHash,
-) -> ExternResult<Option<Record>> {
+pub fn get_original_tool(original_tool_hash: ActionHash) -> ExternResult<Option<Record>> {
     let Some(details) = get_details(original_tool_hash, GetOptions::default())? else {
         return Ok(None);
     };
     match details {
         Details::Record(details) => Ok(Some(details.record)),
-        _ => {
-            Err(
-                wasm_error!(
-                    WasmErrorInner::Guest("Malformed get details response".to_string())
-                ),
-            )
-        }
+        _ => Err(wasm_error!(WasmErrorInner::Guest(
+            "Malformed get details response".to_string()
+        ))),
     }
 }
 #[hdk_extern]
-pub fn get_all_revisions_for_tool(
-    original_tool_hash: ActionHash,
-) -> ExternResult<Vec<Record>> {
+pub fn get_all_revisions_for_tool(original_tool_hash: ActionHash) -> ExternResult<Vec<Record>> {
     let Some(original_record) = get_original_tool(original_tool_hash.clone())? else {
         return Ok(vec![]);
     };
     let links = get_links(
-        GetLinksInputBuilder::try_new(
-                original_tool_hash.clone(),
-                LinkTypes::ToolUpdates,
-            )?
-            .build(),
+        GetLinksInputBuilder::try_new(original_tool_hash.clone(), LinkTypes::ToolUpdates)?.build(),
     )?;
     let get_input: Vec<GetInput> = links
         .into_iter()
-        .map(|link| Ok(
-            GetInput::new(
-                link
-                    .target
+        .map(|link| {
+            Ok(GetInput::new(
+                link.target
                     .into_action_hash()
-                    .ok_or(
-                        wasm_error!(
-                            WasmErrorInner::Guest("No action hash associated with link"
-                            .to_string())
-                        ),
-                    )?
+                    .ok_or(wasm_error!(WasmErrorInner::Guest(
+                        "No action hash associated with link".to_string()
+                    )))?
                     .into(),
                 GetOptions::default(),
-            ),
-        ))
+            ))
+        })
         .collect::<ExternResult<Vec<GetInput>>>()?;
     let records = HDK.with(|hdk| hdk.borrow().get(get_input))?;
     let mut records: Vec<Record> = records.into_iter().flatten().collect();
@@ -109,56 +83,43 @@ pub struct UpdateToolInput {
 }
 #[hdk_extern]
 pub fn update_tool(input: UpdateToolInput) -> ExternResult<Record> {
-    let updated_tool_hash = update_entry(
-        input.previous_tool_hash.clone(),
-        &input.updated_tool,
-    )?;
+    let updated_tool_hash = update_entry(input.previous_tool_hash.clone(), &input.updated_tool)?;
     create_link(
         input.original_tool_hash.clone(),
         updated_tool_hash.clone(),
         LinkTypes::ToolUpdates,
         (),
     )?;
-    let record = get(updated_tool_hash.clone(), GetOptions::default())?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest("Could not find the newly updated Tool"
-                .to_string())
-            ),
-        )?;
+    let record = get(updated_tool_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(
+        WasmErrorInner::Guest("Could not find the newly updated Tool".to_string())
+    ))?;
     Ok(record)
 }
 #[hdk_extern]
 pub fn delete_tool(original_tool_hash: ActionHash) -> ExternResult<ActionHash> {
-    let details = get_details(original_tool_hash.clone(), GetOptions::default())?
-        .ok_or(
-            wasm_error!(
-                WasmErrorInner::Guest(String::from("{pascal_entry_def_name} not found"))
-            ),
-        )?;
+    let details =
+        get_details(original_tool_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(
+            WasmErrorInner::Guest(String::from("{pascal_entry_def_name} not found"))
+        ))?;
     let record = match details {
         Details::Record(details) => Ok(details.record),
-        _ => {
-            Err(
-                wasm_error!(
-                    WasmErrorInner::Guest(String::from("Malformed get details response"))
-                ),
-            )
-        }
+        _ => Err(wasm_error!(WasmErrorInner::Guest(String::from(
+            "Malformed get details response"
+        )))),
     }?;
     let entry = record
         .entry()
         .as_option()
-        .ok_or(
-            wasm_error!(WasmErrorInner::Guest("Tool record has no entry".to_string())),
-        )?;
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "Tool record has no entry".to_string()
+        )))?;
     let tool = Tool::try_from(entry)?;
     let links = get_links(
         GetLinksInputBuilder::try_new(
-                tool.developer_collective.clone(),
-                LinkTypes::DeveloperCollectiveToTools,
-            )?
-            .build(),
+            tool.developer_collective.clone(),
+            LinkTypes::DeveloperCollectiveToTools,
+        )?
+        .build(),
     )?;
     for link in links {
         if let Some(action_hash) = link.target.into_action_hash() {
@@ -177,9 +138,9 @@ pub fn get_all_deletes_for_tool(
         return Ok(None);
     };
     match details {
-        Details::Entry(_) => {
-            Err(wasm_error!(WasmErrorInner::Guest("Malformed details".into())))
-        }
+        Details::Entry(_) => Err(wasm_error!(WasmErrorInner::Guest(
+            "Malformed details".into()
+        ))),
         Details::Record(record_details) => Ok(Some(record_details.deletes)),
     }
 }
@@ -190,10 +151,12 @@ pub fn get_oldest_delete_for_tool(
     let Some(mut deletes) = get_all_deletes_for_tool(original_tool_hash)? else {
         return Ok(None);
     };
-    deletes
-        .sort_by(|delete_a, delete_b| {
-            delete_a.action().timestamp().cmp(&delete_b.action().timestamp())
-        });
+    deletes.sort_by(|delete_a, delete_b| {
+        delete_a
+            .action()
+            .timestamp()
+            .cmp(&delete_b.action().timestamp())
+    });
     Ok(deletes.first().cloned())
 }
 #[hdk_extern]
@@ -202,10 +165,10 @@ pub fn get_tools_for_developer_collective(
 ) -> ExternResult<Vec<Link>> {
     get_links(
         GetLinksInputBuilder::try_new(
-                developer_collective_hash,
-                LinkTypes::DeveloperCollectiveToTools,
-            )?
-            .build(),
+            developer_collective_hash,
+            LinkTypes::DeveloperCollectiveToTools,
+        )?
+        .build(),
     )
 }
 #[hdk_extern]
@@ -218,11 +181,9 @@ pub fn get_deleted_tools_for_developer_collective(
         None,
         GetOptions::default(),
     )?;
-    Ok(
-        details
-            .into_inner()
-            .into_iter()
-            .filter(|(_link, deletes)| !deletes.is_empty())
-            .collect(),
-    )
+    Ok(details
+        .into_inner()
+        .into_iter()
+        .filter(|(_link, deletes)| !deletes.is_empty())
+        .collect())
 }
