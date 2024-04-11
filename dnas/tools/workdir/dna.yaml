@@ -1,0 +1,21 @@
+---
+manifest_version: "1"
+name: tools
+integrity:
+  network_seed: ~
+  properties: ~
+  origin_time: 1712844151966746
+  zomes:
+    - name: library_integrity
+      hash: ~
+      bundled: "../../../target/wasm32-unknown-unknown/release/library_integrity.wasm"
+      dependencies: ~
+      dylib: ~
+coordinator:
+  zomes:
+    - name: library
+      hash: ~
+      bundled: "../../../target/wasm32-unknown-unknown/release/library.wasm"
+      dependencies:
+        - name: library_integrity
+      dylib: ~

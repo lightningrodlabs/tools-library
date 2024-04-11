@@ -1,0 +1,18 @@
+---
+manifest_version: "1"
+name: tools-library
+description: ~
+roles:
+  - name: tools
+    provisioning:
+      strategy: create
+      deferred: false
+    dna:
+      bundled: "../dnas/tools/workdir/tools.dna"
+      modifiers:
+        network_seed: ~
+        properties: ~
+        origin_time: ~
+        quantum_time: ~
+      installed_hash: ~
+      clone_limit: 0
