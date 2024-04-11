@@ -25,3 +25,27 @@ export async function createCurator(cell: CallableCell, curator = undefined): Pr
     });
 }
 
+
+
+export async function sampleDeveloperCollective(cell: CallableCell, partialDeveloperCollective = {}) {
+    return {
+        ...{
+	  name: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  website: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  contact: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  icon: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  meta_data: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        },
+        ...partialDeveloperCollective
+    };
+}
+
+export async function createDeveloperCollective(cell: CallableCell, developerCollective = undefined): Promise<Record> {
+    return cell.callZome({
+      zome_name: "library",
+      fn_name: "create_developer_collective",
+      payload: developerCollective || await sampleDeveloperCollective(cell),
+    });
+}
+

@@ -36,6 +36,7 @@ export type LibrarySignal = {
 };
 
 export type EntryTypes =
+ | ({ type: 'DeveloperCollective'; } & DeveloperCollective)
  | ({  type: 'Curator'; } & Curator);
 
 
@@ -52,6 +53,24 @@ export interface Curator {
   email: string | undefined;
 
   meta_data: string | undefined;
+}
+
+
+
+
+
+export interface DeveloperCollective { 
+  name: string;
+
+  description: string;
+
+  website: string;
+
+  contact: string;
+
+  icon: string;
+
+  meta_data: string;
 }
 
 

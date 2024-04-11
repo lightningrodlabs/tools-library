@@ -1,3 +1,4 @@
+pub mod developer_collective;
 pub mod curator;
 use hdk::prelude::*;
 use library_integrity::*;

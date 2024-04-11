@@ -1,41 +1,42 @@
 use hdi::prelude::*;
 #[hdk_entry_helper]
 #[derive(Clone, PartialEq)]
-pub struct Curator {
+pub struct DeveloperCollective {
     pub name: String,
     pub description: String,
+    pub website: String,
+    pub contact: String,
     pub icon: String,
-    pub website: Option<String>,
-    pub email: Option<String>,
-    pub meta_data: Option<String>,
+    pub meta_data: String,
 }
-pub fn validate_create_curator(
+pub fn validate_create_developer_collective(
     _action: EntryCreationAction,
-    _curator: Curator,
+    _developer_collective: DeveloperCollective,
 ) -> ExternResult<ValidateCallbackResult> {
     Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_update_curator(
+pub fn validate_update_developer_collective(
     _action: Update,
-    _curator: Curator,
+    _developer_collective: DeveloperCollective,
     _original_action: EntryCreationAction,
-    _original_curator: Curator,
+    _original_developer_collective: DeveloperCollective,
 ) -> ExternResult<ValidateCallbackResult> {
     Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_delete_curator(
+pub fn validate_delete_developer_collective(
     _action: Delete,
     _original_action: EntryCreationAction,
-    _original_curator: Curator,
+    _original_developer_collective: DeveloperCollective,
 ) -> ExternResult<ValidateCallbackResult> {
     Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_create_link_curator_updates(
+pub fn validate_create_link_developer_collective_updates(
     _action: CreateLink,
     base_address: AnyLinkableHash,
     target_address: AnyLinkableHash,
     _tag: LinkTag,
 ) -> ExternResult<ValidateCallbackResult> {
+    // Check the entry type for the given action hash
     let action_hash = base_address
         .into_action_hash()
         .ok_or(
@@ -44,7 +45,7 @@ pub fn validate_create_link_curator_updates(
             ),
         )?;
     let record = must_get_valid_record(action_hash)?;
-    let _curator: crate::Curator = record
+    let _developer_collective: crate::DeveloperCollective = record
         .entry()
         .to_app_option()
         .map_err(|e| wasm_error!(e))?
@@ -54,6 +55,7 @@ pub fn validate_create_link_curator_updates(
                 .to_string())
             ),
         )?;
+    // Check the entry type for the given action hash
     let action_hash = target_address
         .into_action_hash()
         .ok_or(
@@ -62,7 +64,7 @@ pub fn validate_create_link_curator_updates(
             ),
         )?;
     let record = must_get_valid_record(action_hash)?;
-    let _curator: crate::Curator = record
+    let _developer_collective: crate::DeveloperCollective = record
         .entry()
         .to_app_option()
         .map_err(|e| wasm_error!(e))?
@@ -72,9 +74,10 @@ pub fn validate_create_link_curator_updates(
                 .to_string())
             ),
         )?;
+    // TODO: add the appropriate validation rules
     Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_delete_link_curator_updates(
+pub fn validate_delete_link_developer_collective_updates(
     _action: DeleteLink,
     _original_action: CreateLink,
     _base: AnyLinkableHash,
@@ -83,7 +86,7 @@ pub fn validate_delete_link_curator_updates(
 ) -> ExternResult<ValidateCallbackResult> {
     Ok(
         ValidateCallbackResult::Invalid(
-            String::from("CuratorUpdates links cannot be deleted"),
+            String::from("DeveloperCollectiveUpdates links cannot be deleted"),
         ),
     )
 }

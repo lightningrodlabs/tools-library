@@ -1,3 +1,5 @@
+pub mod developer_collective;
+pub use developer_collective::*;
 pub mod curator;
 pub use curator::*;
 use hdi::prelude::*;
@@ -7,11 +9,13 @@ use hdi::prelude::*;
 #[unit_enum(UnitEntryTypes)]
 pub enum EntryTypes {
     Curator(Curator),
+    DeveloperCollective(DeveloperCollective),
 }
 #[derive(Serialize, Deserialize)]
 #[hdk_link_types]
 pub enum LinkTypes {
     CuratorUpdates,
+    DeveloperCollectiveUpdates,
 }
 #[hdk_extern]
 pub fn genesis_self_check(
@@ -38,6 +42,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 curator,
                             )
                         }
+                        EntryTypes::DeveloperCollective(developer_collective) => {
+                            validate_create_developer_collective(
+                                EntryCreationAction::Create(action),
+                                developer_collective,
+                            )
+                        }
                     }
                 }
                 OpEntry::UpdateEntry { app_entry, action, .. } => {
@@ -46,6 +56,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                             validate_create_curator(
                                 EntryCreationAction::Update(action),
                                 curator,
+                            )
+                        }
+                        EntryTypes::DeveloperCollective(developer_collective) => {
+                            validate_create_developer_collective(
+                                EntryCreationAction::Update(action),
+                                developer_collective,
                             )
                         }
                     }
@@ -62,6 +78,19 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     action,
                 } => {
                     match (app_entry, original_app_entry) {
+                        (
+                            EntryTypes::DeveloperCollective(developer_collective),
+                            EntryTypes::DeveloperCollective(
+                                original_developer_collective,
+                            ),
+                        ) => {
+                            validate_update_developer_collective(
+                                action,
+                                developer_collective,
+                                original_action,
+                                original_developer_collective,
+                            )
+                        }
                         (
                             EntryTypes::Curator(curator),
                             EntryTypes::Curator(original_curator),
@@ -93,6 +122,13 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         EntryTypes::Curator(curator) => {
                             validate_delete_curator(action, original_action, curator)
                         }
+                        EntryTypes::DeveloperCollective(developer_collective) => {
+                            validate_delete_developer_collective(
+                                action,
+                                original_action,
+                                developer_collective,
+                            )
+                        }
                     }
                 }
                 _ => Ok(ValidateCallbackResult::Valid),
@@ -108,6 +144,14 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             match link_type {
                 LinkTypes::CuratorUpdates => {
                     validate_create_link_curator_updates(
+                        action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
+                LinkTypes::DeveloperCollectiveUpdates => {
+                    validate_create_link_developer_collective_updates(
                         action,
                         base_address,
                         target_address,
@@ -134,6 +178,15 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         tag,
                     )
                 }
+                LinkTypes::DeveloperCollectiveUpdates => {
+                    validate_delete_link_developer_collective_updates(
+                        action,
+                        original_action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
             }
         }
         FlatOp::StoreRecord(store_record) => {
@@ -144,6 +197,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                             validate_create_curator(
                                 EntryCreationAction::Create(action),
                                 curator,
+                            )
+                        }
+                        EntryTypes::DeveloperCollective(developer_collective) => {
+                            validate_create_developer_collective(
+                                EntryCreationAction::Create(action),
+                                developer_collective,
                             )
                         }
                     }
@@ -195,6 +254,39 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                     curator,
                                     original_action,
                                     original_curator,
+                                )
+                            } else {
+                                Ok(result)
+                            }
+                        }
+                        EntryTypes::DeveloperCollective(developer_collective) => {
+                            let result = validate_create_developer_collective(
+                                EntryCreationAction::Update(action.clone()),
+                                developer_collective.clone(),
+                            )?;
+                            if let ValidateCallbackResult::Valid = result {
+                                let original_developer_collective: Option<
+                                    DeveloperCollective,
+                                > = original_record
+                                    .entry()
+                                    .to_app_option()
+                                    .map_err(|e| wasm_error!(e))?;
+                                let original_developer_collective = match original_developer_collective {
+                                    Some(developer_collective) => developer_collective,
+                                    None => {
+                                        return Ok(
+                                            ValidateCallbackResult::Invalid(
+                                                "The updated entry type must be the same as the original entry type"
+                                                    .to_string(),
+                                            ),
+                                        );
+                                    }
+                                };
+                                validate_update_developer_collective(
+                                    action,
+                                    developer_collective,
+                                    original_action,
+                                    original_developer_collective,
                                 )
                             } else {
                                 Ok(result)
@@ -261,6 +353,15 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 original_curator,
                             )
                         }
+                        EntryTypes::DeveloperCollective(
+                            original_developer_collective,
+                        ) => {
+                            validate_delete_developer_collective(
+                                action,
+                                original_action,
+                                original_developer_collective,
+                            )
+                        }
                     }
                 }
                 OpRecord::CreateLink {
@@ -273,6 +374,14 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     match link_type {
                         LinkTypes::CuratorUpdates => {
                             validate_create_link_curator_updates(
+                                action,
+                                base_address,
+                                target_address,
+                                tag,
+                            )
+                        }
+                        LinkTypes::DeveloperCollectiveUpdates => {
+                            validate_create_link_developer_collective_updates(
                                 action,
                                 base_address,
                                 target_address,
@@ -306,6 +415,15 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     match link_type {
                         LinkTypes::CuratorUpdates => {
                             validate_delete_link_curator_updates(
+                                action,
+                                create_link.clone(),
+                                base_address,
+                                create_link.target_address,
+                                create_link.tag,
+                            )
+                        }
+                        LinkTypes::DeveloperCollectiveUpdates => {
+                            validate_delete_link_developer_collective_updates(
                                 action,
                                 create_link.clone(),
                                 base_address,
