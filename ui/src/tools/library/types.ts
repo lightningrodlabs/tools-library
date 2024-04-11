@@ -35,4 +35,23 @@ export type LibrarySignal = {
   link_type: string;
 };
 
-export type EntryTypes = {};
+export type EntryTypes =
+ | ({  type: 'Curator'; } & Curator);
+
+
+
+export interface Curator { 
+  name: string;
+
+  description: string;
+
+  icon: string;
+
+  website: string | undefined;
+
+  email: string | undefined;
+
+  meta_data: string | undefined;
+}
+
+
