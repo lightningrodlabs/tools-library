@@ -1,6 +1,5 @@
 use hdk::prelude::*;
 use library_integrity::*;
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct AddDeveloperCollectiveForCuratorInput {
     pub base_curator_hash: ActionHash,
@@ -22,10 +21,8 @@ pub fn add_developer_collective_for_curator(
         LinkTypes::DeveloperCollectiveToCurators,
         (),
     )?;
-
     Ok(())
 }
-
 #[hdk_extern]
 pub fn get_developer_collectives_for_curator(curator_hash: ActionHash) -> ExternResult<Vec<Link>> {
     get_links(
@@ -33,7 +30,6 @@ pub fn get_developer_collectives_for_curator(curator_hash: ActionHash) -> Extern
             .build(),
     )
 }
-
 #[hdk_extern]
 pub fn get_deleted_developer_collectives_for_curator(
     curator_hash: ActionHash,
@@ -50,7 +46,6 @@ pub fn get_deleted_developer_collectives_for_curator(
         .filter(|(_link, deletes)| !deletes.is_empty())
         .collect())
 }
-
 #[hdk_extern]
 pub fn get_curators_for_developer_collective(
     developer_collective_hash: ActionHash,
@@ -63,7 +58,6 @@ pub fn get_curators_for_developer_collective(
         .build(),
     )
 }
-
 #[hdk_extern]
 pub fn get_deleted_curators_for_developer_collective(
     developer_collective_hash: ActionHash,
@@ -80,7 +74,6 @@ pub fn get_deleted_curators_for_developer_collective(
         .filter(|(_link, deletes)| !deletes.is_empty())
         .collect())
 }
-
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RemoveDeveloperCollectiveForCuratorInput {
     pub base_curator_hash: ActionHash,
@@ -97,7 +90,6 @@ pub fn remove_developer_collective_for_curator(
         )?
         .build(),
     )?;
-
     for link in links {
         if link
             .target
@@ -111,7 +103,6 @@ pub fn remove_developer_collective_for_curator(
             delete_link(link.create_link_hash)?;
         }
     }
-
     let links = get_links(
         GetLinksInputBuilder::try_new(
             input.target_developer_collective_hash.clone(),
@@ -119,7 +110,6 @@ pub fn remove_developer_collective_for_curator(
         )?
         .build(),
     )?;
-
     for link in links {
         if link
             .target
@@ -133,6 +123,5 @@ pub fn remove_developer_collective_for_curator(
             delete_link(link.create_link_hash)?;
         }
     }
-
     Ok(())
 }

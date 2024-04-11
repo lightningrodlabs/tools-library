@@ -1,6 +1,7 @@
 pub mod contributor_permission;
 pub mod curator;
 pub mod curator_to_developer_collectives;
+pub mod curator_to_tools;
 pub mod developer_collective;
 pub mod tool;
 use hdk::prelude::*;
