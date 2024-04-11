@@ -36,7 +36,6 @@ pub fn validate_create_link_developer_collective_updates(
     target_address: AnyLinkableHash,
     _tag: LinkTag,
 ) -> ExternResult<ValidateCallbackResult> {
-    // Check the entry type for the given action hash
     let action_hash = base_address
         .into_action_hash()
         .ok_or(
@@ -55,7 +54,6 @@ pub fn validate_create_link_developer_collective_updates(
                 .to_string())
             ),
         )?;
-    // Check the entry type for the given action hash
     let action_hash = target_address
         .into_action_hash()
         .ok_or(
@@ -74,7 +72,6 @@ pub fn validate_create_link_developer_collective_updates(
                 .to_string())
             ),
         )?;
-    // TODO: add the appropriate validation rules
     Ok(ValidateCallbackResult::Valid)
 }
 pub fn validate_delete_link_developer_collective_updates(

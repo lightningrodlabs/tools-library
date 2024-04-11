@@ -1,3 +1,5 @@
+pub mod contributor_permission;
+pub use contributor_permission::*;
 pub mod developer_collective;
 pub use developer_collective::*;
 pub mod curator;
@@ -10,12 +12,15 @@ use hdi::prelude::*;
 pub enum EntryTypes {
     Curator(Curator),
     DeveloperCollective(DeveloperCollective),
+    ContributorPermission(ContributorPermission),
 }
 #[derive(Serialize, Deserialize)]
 #[hdk_link_types]
 pub enum LinkTypes {
     CuratorUpdates,
     DeveloperCollectiveUpdates,
+    DeveloperCollectiveToContributorPermissions,
+    ContributorToContributorPermissions,
 }
 #[hdk_extern]
 pub fn genesis_self_check(
@@ -48,6 +53,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 developer_collective,
                             )
                         }
+                        EntryTypes::ContributorPermission(contributor_permission) => {
+                            validate_create_contributor_permission(
+                                EntryCreationAction::Create(action),
+                                contributor_permission,
+                            )
+                        }
                     }
                 }
                 OpEntry::UpdateEntry { app_entry, action, .. } => {
@@ -64,6 +75,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 developer_collective,
                             )
                         }
+                        EntryTypes::ContributorPermission(contributor_permission) => {
+                            validate_create_contributor_permission(
+                                EntryCreationAction::Update(action),
+                                contributor_permission,
+                            )
+                        }
                     }
                 }
                 _ => Ok(ValidateCallbackResult::Valid),
@@ -78,6 +95,19 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     action,
                 } => {
                     match (app_entry, original_app_entry) {
+                        (
+                            EntryTypes::ContributorPermission(contributor_permission),
+                            EntryTypes::ContributorPermission(
+                                original_contributor_permission,
+                            ),
+                        ) => {
+                            validate_update_contributor_permission(
+                                action,
+                                contributor_permission,
+                                original_action,
+                                original_contributor_permission,
+                            )
+                        }
                         (
                             EntryTypes::DeveloperCollective(developer_collective),
                             EntryTypes::DeveloperCollective(
@@ -129,6 +159,13 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 developer_collective,
                             )
                         }
+                        EntryTypes::ContributorPermission(contributor_permission) => {
+                            validate_delete_contributor_permission(
+                                action,
+                                original_action,
+                                contributor_permission,
+                            )
+                        }
                     }
                 }
                 _ => Ok(ValidateCallbackResult::Valid),
@@ -152,6 +189,22 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 }
                 LinkTypes::DeveloperCollectiveUpdates => {
                     validate_create_link_developer_collective_updates(
+                        action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
+                LinkTypes::DeveloperCollectiveToContributorPermissions => {
+                    validate_create_link_developer_collective_to_contributor_permissions(
+                        action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
+                LinkTypes::ContributorToContributorPermissions => {
+                    validate_create_link_contributor_to_contributor_permissions(
                         action,
                         base_address,
                         target_address,
@@ -187,6 +240,24 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         tag,
                     )
                 }
+                LinkTypes::DeveloperCollectiveToContributorPermissions => {
+                    validate_delete_link_developer_collective_to_contributor_permissions(
+                        action,
+                        original_action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
+                LinkTypes::ContributorToContributorPermissions => {
+                    validate_delete_link_contributor_to_contributor_permissions(
+                        action,
+                        original_action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
             }
         }
         FlatOp::StoreRecord(store_record) => {
@@ -203,6 +274,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                             validate_create_developer_collective(
                                 EntryCreationAction::Create(action),
                                 developer_collective,
+                            )
+                        }
+                        EntryTypes::ContributorPermission(contributor_permission) => {
+                            validate_create_contributor_permission(
+                                EntryCreationAction::Create(action),
+                                contributor_permission,
                             )
                         }
                     }
@@ -292,6 +369,39 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 Ok(result)
                             }
                         }
+                        EntryTypes::ContributorPermission(contributor_permission) => {
+                            let result = validate_create_contributor_permission(
+                                EntryCreationAction::Update(action.clone()),
+                                contributor_permission.clone(),
+                            )?;
+                            if let ValidateCallbackResult::Valid = result {
+                                let original_contributor_permission: Option<
+                                    ContributorPermission,
+                                > = original_record
+                                    .entry()
+                                    .to_app_option()
+                                    .map_err(|e| wasm_error!(e))?;
+                                let original_contributor_permission = match original_contributor_permission {
+                                    Some(contributor_permission) => contributor_permission,
+                                    None => {
+                                        return Ok(
+                                            ValidateCallbackResult::Invalid(
+                                                "The updated entry type must be the same as the original entry type"
+                                                    .to_string(),
+                                            ),
+                                        );
+                                    }
+                                };
+                                validate_update_contributor_permission(
+                                    action,
+                                    contributor_permission,
+                                    original_action,
+                                    original_contributor_permission,
+                                )
+                            } else {
+                                Ok(result)
+                            }
+                        }
                     }
                 }
                 OpRecord::DeleteEntry { original_action_hash, action, .. } => {
@@ -362,6 +472,15 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                                 original_developer_collective,
                             )
                         }
+                        EntryTypes::ContributorPermission(
+                            original_contributor_permission,
+                        ) => {
+                            validate_delete_contributor_permission(
+                                action,
+                                original_action,
+                                original_contributor_permission,
+                            )
+                        }
                     }
                 }
                 OpRecord::CreateLink {
@@ -382,6 +501,22 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         }
                         LinkTypes::DeveloperCollectiveUpdates => {
                             validate_create_link_developer_collective_updates(
+                                action,
+                                base_address,
+                                target_address,
+                                tag,
+                            )
+                        }
+                        LinkTypes::DeveloperCollectiveToContributorPermissions => {
+                            validate_create_link_developer_collective_to_contributor_permissions(
+                                action,
+                                base_address,
+                                target_address,
+                                tag,
+                            )
+                        }
+                        LinkTypes::ContributorToContributorPermissions => {
+                            validate_create_link_contributor_to_contributor_permissions(
                                 action,
                                 base_address,
                                 target_address,
@@ -424,6 +559,24 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         }
                         LinkTypes::DeveloperCollectiveUpdates => {
                             validate_delete_link_developer_collective_updates(
+                                action,
+                                create_link.clone(),
+                                base_address,
+                                create_link.target_address,
+                                create_link.tag,
+                            )
+                        }
+                        LinkTypes::DeveloperCollectiveToContributorPermissions => {
+                            validate_delete_link_developer_collective_to_contributor_permissions(
+                                action,
+                                create_link.clone(),
+                                base_address,
+                                create_link.target_address,
+                                create_link.tag,
+                            )
+                        }
+                        LinkTypes::ContributorToContributorPermissions => {
+                            validate_delete_link_contributor_to_contributor_permissions(
                                 action,
                                 create_link.clone(),
                                 base_address,

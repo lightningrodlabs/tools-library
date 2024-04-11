@@ -1,3 +1,4 @@
+pub mod contributor_permission;
 pub mod developer_collective;
 pub mod curator;
 use hdk::prelude::*;

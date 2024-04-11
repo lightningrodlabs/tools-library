@@ -36,6 +36,7 @@ export type LibrarySignal = {
 };
 
 export type EntryTypes =
+ | ({ type: 'ContributorPermission'; } & ContributorPermission)
  | ({ type: 'DeveloperCollective'; } & DeveloperCollective)
  | ({  type: 'Curator'; } & Curator);
 
@@ -71,6 +72,18 @@ export interface DeveloperCollective {
   icon: string;
 
   meta_data: string;
+}
+
+
+
+
+
+export interface ContributorPermission { 
+  for_collective: ActionHash;
+
+  for_agent: AgentPubKey;
+
+  expiry: number | undefined;
 }
 
 

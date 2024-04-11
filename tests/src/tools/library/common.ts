@@ -49,3 +49,24 @@ export async function createDeveloperCollective(cell: CallableCell, developerCol
     });
 }
 
+
+
+export async function sampleContributorPermission(cell: CallableCell, partialContributorPermission = {}) {
+    return {
+        ...{
+          for_collective: (await createDeveloperCollective(cell)).signed_action.hashed.hash,
+          for_agent: cell.cell_id[1],
+	  expiry: 1674053334548000,
+        },
+        ...partialContributorPermission
+    };
+}
+
+export async function createContributorPermission(cell: CallableCell, contributorPermission = undefined): Promise<Record> {
+    return cell.callZome({
+      zome_name: "library",
+      fn_name: "create_contributor_permission",
+      payload: contributorPermission || await sampleContributorPermission(cell),
+    });
+}
+
