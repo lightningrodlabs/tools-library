@@ -75,15 +75,57 @@ pub fn get_all_revisions_for_tool(original_tool_hash: ActionHash) -> ExternResul
     records.insert(0, original_record);
     Ok(records)
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct UpdatedTool {
+    // the developer_collective field cannot be updated
+    pub permission_hash: ActionHash, // Either the CreateAction hash of the DeveloperCollective entry or an ActionHash of a ContributorPermission entry
+    pub title: String,
+    pub subtitle: String,
+    pub description: String,
+    pub icon: String, // base64 string
+    pub version: String,
+    pub source: String, // JSON string containing information about where to get this Tool from
+    pub hashes: String, // Hashes related to this Tool to verify its integrity
+    pub changelog: Option<String>,
+    pub meta_data: Option<String>,
+    pub deprecation: Option<String>,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct UpdateToolInput {
     pub original_tool_hash: ActionHash,
     pub previous_tool_hash: ActionHash,
-    pub updated_tool: Tool,
+    pub updated_tool: UpdatedTool,
 }
 #[hdk_extern]
 pub fn update_tool(input: UpdateToolInput) -> ExternResult<Record> {
-    let updated_tool_hash = update_entry(input.previous_tool_hash.clone(), &input.updated_tool)?;
+    let original_tool_record = get(input.original_tool_hash.clone(), GetOptions::default())?
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "Failed to get original Tool record".into()
+        )))?;
+    let original_tool: Tool = original_tool_record
+        .entry()
+        .to_app_option()
+        .map_err(|e| wasm_error!(e))?
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "Linked action must reference an entry".to_string()
+        )))?;
+    let updated_tool = Tool {
+        developer_collective: original_tool.developer_collective, // developer_collective field is taken from the original Tool entry
+        permission_hash: input.updated_tool.permission_hash.clone(),
+        title: input.updated_tool.title,
+        subtitle: input.updated_tool.subtitle,
+        description: input.updated_tool.description,
+        icon: input.updated_tool.icon,
+        version: input.updated_tool.version,
+        source: input.updated_tool.source,
+        hashes: input.updated_tool.hashes,
+        changelog: input.updated_tool.changelog,
+        meta_data: input.updated_tool.meta_data,
+        deprecation: input.updated_tool.deprecation,
+    };
+    let updated_tool_hash = update_entry(input.previous_tool_hash.clone(), updated_tool)?;
     create_link(
         input.original_tool_hash.clone(),
         updated_tool_hash.clone(),
