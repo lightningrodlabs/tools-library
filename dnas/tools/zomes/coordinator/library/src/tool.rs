@@ -7,8 +7,8 @@ pub fn create_tool(tool: Tool) -> ExternResult<Record> {
         tool.developer_collective.clone(),
         tool_hash.clone(),
         LinkTypes::DeveloperCollectiveToTools,
-        // TODO add a tag containing the permission action hash here
-        (),
+        // Tag must contain the permission action hash here:
+        LinkTag::new(tool.permission_hash.get_raw_39()),
     )?;
     let record = get(tool_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(
         WasmErrorInner::Guest("Could not find the newly created Tool".to_string())
@@ -88,7 +88,8 @@ pub fn update_tool(input: UpdateToolInput) -> ExternResult<Record> {
         input.original_tool_hash.clone(),
         updated_tool_hash.clone(),
         LinkTypes::ToolUpdates,
-        (),
+        // Tag must contain the permission action hash here:
+        LinkTag::new(input.updated_tool.permission_hash.get_raw_39()),
     )?;
     let record = get(updated_tool_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(
         WasmErrorInner::Guest("Could not find the newly updated Tool".to_string())
