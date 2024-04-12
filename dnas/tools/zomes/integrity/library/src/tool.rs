@@ -4,13 +4,14 @@ use hdi::prelude::*;
 #[derive(Clone, PartialEq)]
 pub struct Tool {
     pub developer_collective: ActionHash,
-    pub permission_hash: ActionHash,
+    pub permission_hash: ActionHash, // Either the CreateAction hash of the DeveloperCollective entry or an ActionHash of a ContributorPermission entry
     pub title: String,
     pub subtitle: String,
     pub description: String,
-    pub icon: String,
-    pub source: String,
-    pub hashes: String,
+    pub icon: String, // base64 string
+    pub version: String,
+    pub source: String, // JSON string containing information about where to get this Tool from
+    pub hashes: String, // Hashes related to this Tool to verify its integrity
     pub changelog: Option<String>,
     pub meta_data: Option<String>,
     pub deprecation: Option<String>,
