@@ -1,5 +1,5 @@
 import { CallableCell } from '@holochain/tryorama';
-import { NewEntryAction, ActionHash, Record, AppBundleSource, fakeActionHash, fakeAgentPubKey, fakeEntryHash, fakeDnaHash } from '@holochain/client';
+import { Record, fakeActionHash } from '@holochain/client';
 
 
 
@@ -80,6 +80,26 @@ export async function sampleTool(cell: CallableCell, partialTool = {}) {
 	  title: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
 	  subtitle: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
 	  description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  version: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  icon: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  source: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  hashes: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  changelog: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  meta_data: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  deprecation: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+        },
+        ...partialTool
+    };
+}
+
+export async function sampleToolUpdate(partialTool = {}) {
+    return {
+        ...{
+	  permission_hash: (await fakeActionHash()),
+	  title: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  subtitle: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  description: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
+	  version: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
 	  icon: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
 	  source: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
 	  hashes: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",

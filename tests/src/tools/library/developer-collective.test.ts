@@ -24,7 +24,7 @@ test('create DeveloperCollective', async () => {
     // This assumes app bundle created by the `hc app pack` command.
     const testAppPath = process.cwd() + '/../workdir/tools-library.happ';
 
-    // Set up the app to be installed 
+    // Set up the app to be installed
     const appSource = { appBundleSource: { path: testAppPath } };
 
     // Add 2 players with the test app to the Scenario. The returned players
@@ -47,7 +47,7 @@ test('create and read DeveloperCollective', async () => {
     // This assumes app bundle created by the `hc app pack` command.
     const testAppPath = process.cwd() + '/../workdir/tools-library.happ';
 
-    // Set up the app to be installed 
+    // Set up the app to be installed
     const appSource = { appBundleSource: { path: testAppPath } };
 
     // Add 2 players with the test app to the Scenario. The returned players
@@ -84,7 +84,7 @@ test('create and update DeveloperCollective', async () => {
     // This assumes app bundle created by the `hc app pack` command.
     const testAppPath = process.cwd() + '/../workdir/tools-library.happ';
 
-    // Set up the app to be installed 
+    // Set up the app to be installed
     const appSource = { appBundleSource: { path: testAppPath } };
 
     // Add 2 players with the test app to the Scenario. The returned players
@@ -98,9 +98,9 @@ test('create and update DeveloperCollective', async () => {
     // Alice creates a DeveloperCollective
     const record: Record = await createDeveloperCollective(alice.cells[0]);
     assert.ok(record);
-        
+
     const originalActionHash = record.signed_action.hashed.hash;
- 
+
     // Alice updates the DeveloperCollective
     let contentUpdate: any = await sampleDeveloperCollective(alice.cells[0]);
     let updateInput = {
@@ -118,7 +118,7 @@ test('create and update DeveloperCollective', async () => {
 
     // Wait for the updated entry to be propagated to the other node.
     await dhtSync([alice, bob], alice.cells[0].cell_id[0]);
-        
+
     // Bob gets the updated DeveloperCollective
     const readUpdatedOutput0: Record = await bob.cells[0].callZome({
       zome_name: "library",
@@ -129,7 +129,7 @@ test('create and update DeveloperCollective', async () => {
 
     // Alice updates the DeveloperCollective again
     contentUpdate = await sampleDeveloperCollective(alice.cells[0]);
-    updateInput = { 
+    updateInput = {
       original_developer_collective_hash: originalActionHash,
       previous_developer_collective_hash: updatedRecord.signed_action.hashed.hash,
       updated_developer_collective: contentUpdate,
@@ -144,7 +144,7 @@ test('create and update DeveloperCollective', async () => {
 
     // Wait for the updated entry to be propagated to the other node.
     await dhtSync([alice, bob], alice.cells[0].cell_id[0]);
-        
+
     // Bob gets the updated DeveloperCollective
     const readUpdatedOutput1: Record = await bob.cells[0].callZome({
       zome_name: "library",
@@ -170,7 +170,7 @@ test('create and delete DeveloperCollective', async () => {
     // This assumes app bundle created by the `hc app pack` command.
     const testAppPath = process.cwd() + '/../workdir/tools-library.happ';
 
-    // Set up the app to be installed 
+    // Set up the app to be installed
     const appSource = { appBundleSource: { path: testAppPath } };
 
     // Add 2 players with the test app to the Scenario. The returned players
@@ -208,14 +208,14 @@ test('create and delete DeveloperCollective', async () => {
       payload: record.signed_action.hashed.hash,
     });
     assert.ok(oldestDeleteForDeveloperCollective);
-        
+
     // Bob gets the deletions for DeveloperCollective
-    const deletesForDeveloper Collective: SignedActionHashed[] = await bob.cells[0].callZome({
+    const deletesForDeveloperCollective: SignedActionHashed[] = await bob.cells[0].callZome({
       zome_name: "library",
       fn_name: "get_all_deletes_for_developer_collective",
       payload: record.signed_action.hashed.hash,
     });
-    assert.equal(deletesForDeveloper Collective.length, 1);
+    assert.equal(deletesForDeveloperCollective.length, 1);
 
 
   });
