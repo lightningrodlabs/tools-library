@@ -34,6 +34,7 @@ pub enum LinkTypes {
     DeveloperCollectiveToCurators,
     CuratorToTools,
     ToolToCurators,
+    AllCurators,
 }
 #[hdk_extern]
 pub fn genesis_self_check(_data: GenesisSelfCheckData) -> ExternResult<ValidateCallbackResult> {
@@ -224,6 +225,9 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             LinkTypes::ToolToCurators => {
                 validate_create_link_tool_to_curators(action, base_address, target_address, tag)
             }
+            LinkTypes::AllCurators => {
+                validate_create_link_all_curators(action, base_address, target_address, tag)
+            }
         },
         FlatOp::RegisterDeleteLink {
             link_type,
@@ -309,6 +313,13 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 tag,
             ),
             LinkTypes::ToolToCurators => validate_delete_link_tool_to_curators(
+                action,
+                original_action,
+                base_address,
+                target_address,
+                tag,
+            ),
+            LinkTypes::AllCurators => validate_delete_link_all_curators(
                 action,
                 original_action,
                 base_address,
@@ -624,6 +635,9 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 LinkTypes::ToolToCurators => {
                     validate_create_link_tool_to_curators(action, base_address, target_address, tag)
                 }
+                LinkTypes::AllCurators => {
+                    validate_create_link_all_curators(action, base_address, target_address, tag)
+                }
             },
             OpRecord::DeleteLink {
                 original_action_hash,
@@ -723,6 +737,13 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         create_link.tag,
                     ),
                     LinkTypes::ToolToCurators => validate_delete_link_tool_to_curators(
+                        action,
+                        create_link.clone(),
+                        base_address,
+                        create_link.target_address,
+                        create_link.tag,
+                    ),
+                    LinkTypes::AllCurators => validate_delete_link_all_curators(
                         action,
                         create_link.clone(),
                         base_address,

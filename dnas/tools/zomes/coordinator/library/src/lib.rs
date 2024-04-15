@@ -1,3 +1,4 @@
+pub mod all_curators;
 pub mod contributor_permission;
 pub mod curator;
 pub mod curator_to_developer_collectives;
