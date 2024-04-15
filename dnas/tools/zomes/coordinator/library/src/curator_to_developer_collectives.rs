@@ -24,9 +24,14 @@ pub fn add_developer_collective_for_curator(
     Ok(())
 }
 #[hdk_extern]
-pub fn get_developer_collectives_for_curator(curator_hash: ActionHash) -> ExternResult<Vec<Link>> {
+pub fn get_developer_collectives_for_curator(
+    curator_hash: ActionHash,
+) -> ExternResult<Vec<Link>> {
     get_links(
-        GetLinksInputBuilder::try_new(curator_hash, LinkTypes::CuratorToDeveloperCollectives)?
+        GetLinksInputBuilder::try_new(
+                curator_hash,
+                LinkTypes::CuratorToDeveloperCollectives,
+            )?
             .build(),
     )
 }
@@ -40,11 +45,13 @@ pub fn get_deleted_developer_collectives_for_curator(
         None,
         GetOptions::default(),
     )?;
-    Ok(details
-        .into_inner()
-        .into_iter()
-        .filter(|(_link, deletes)| !deletes.is_empty())
-        .collect())
+    Ok(
+        details
+            .into_inner()
+            .into_iter()
+            .filter(|(_link, deletes)| !deletes.is_empty())
+            .collect(),
+    )
 }
 #[hdk_extern]
 pub fn get_curators_for_developer_collective(
@@ -52,10 +59,10 @@ pub fn get_curators_for_developer_collective(
 ) -> ExternResult<Vec<Link>> {
     get_links(
         GetLinksInputBuilder::try_new(
-            developer_collective_hash,
-            LinkTypes::DeveloperCollectiveToCurators,
-        )?
-        .build(),
+                developer_collective_hash,
+                LinkTypes::DeveloperCollectiveToCurators,
+            )?
+            .build(),
     )
 }
 #[hdk_extern]
@@ -68,11 +75,13 @@ pub fn get_deleted_curators_for_developer_collective(
         None,
         GetOptions::default(),
     )?;
-    Ok(details
-        .into_inner()
-        .into_iter()
-        .filter(|(_link, deletes)| !deletes.is_empty())
-        .collect())
+    Ok(
+        details
+            .into_inner()
+            .into_iter()
+            .filter(|(_link, deletes)| !deletes.is_empty())
+            .collect(),
+    )
 }
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RemoveDeveloperCollectiveForCuratorInput {
@@ -85,19 +94,22 @@ pub fn remove_developer_collective_for_curator(
 ) -> ExternResult<()> {
     let links = get_links(
         GetLinksInputBuilder::try_new(
-            input.base_curator_hash.clone(),
-            LinkTypes::CuratorToDeveloperCollectives,
-        )?
-        .build(),
+                input.base_curator_hash.clone(),
+                LinkTypes::CuratorToDeveloperCollectives,
+            )?
+            .build(),
     )?;
     for link in links {
         if link
             .target
             .clone()
             .into_action_hash()
-            .ok_or(wasm_error!(WasmErrorInner::Guest(
-                "No action hash associated with link".to_string()
-            )))?
+            .ok_or(
+                wasm_error!(
+                    WasmErrorInner::Guest("No action hash associated with link"
+                    .to_string())
+                ),
+            )?
             .eq(&input.target_developer_collective_hash)
         {
             delete_link(link.create_link_hash)?;
@@ -105,19 +117,22 @@ pub fn remove_developer_collective_for_curator(
     }
     let links = get_links(
         GetLinksInputBuilder::try_new(
-            input.target_developer_collective_hash.clone(),
-            LinkTypes::DeveloperCollectiveToCurators,
-        )?
-        .build(),
+                input.target_developer_collective_hash.clone(),
+                LinkTypes::DeveloperCollectiveToCurators,
+            )?
+            .build(),
     )?;
     for link in links {
         if link
             .target
             .clone()
             .into_action_hash()
-            .ok_or(wasm_error!(WasmErrorInner::Guest(
-                "No action hash associated with link".to_string()
-            )))?
+            .ok_or(
+                wasm_error!(
+                    WasmErrorInner::Guest("No action hash associated with link"
+                    .to_string())
+                ),
+            )?
             .eq(&input.base_curator_hash)
         {
             delete_link(link.create_link_hash)?;
