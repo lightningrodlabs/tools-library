@@ -10,6 +10,13 @@ pub fn create_curator(curator: Curator) -> ExternResult<Record> {
                 .to_string())
             ),
         )?;
+    let path = Path::from("all_curators");
+    create_link(
+        path.path_entry_hash()?,
+        curator_hash.clone(),
+        LinkTypes::AllCurators,
+        (),
+    )?;
     Ok(record)
 }
 #[hdk_extern]
@@ -143,6 +150,18 @@ pub fn delete_curator(original_curator_hash: ActionHash) -> ExternResult<ActionH
             )
         }
     }?;
+    let path = Path::from("all_curators");
+    let links = get_links(
+        GetLinksInputBuilder::try_new(path.path_entry_hash()?, LinkTypes::AllCurators)?
+            .build(),
+    )?;
+    for link in links {
+        if let Some(hash) = link.target.into_action_hash() {
+            if hash.eq(&original_curator_hash) {
+                delete_link(link.create_link_hash)?;
+            }
+        }
+    }
     delete_entry(original_curator_hash)
 }
 #[hdk_extern]
