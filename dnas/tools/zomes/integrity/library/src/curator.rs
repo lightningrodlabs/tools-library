@@ -107,7 +107,7 @@ pub fn validate_create_link_all_curators(
     _tag: LinkTag,
 ) -> ExternResult<ValidateCallbackResult> {
     // Check that base address is pointing away from the all_curators anchor
-    let base_address_entry_hash = EntryHash::try_from(base_address).map_err(|e| {
+    let base_address_entry_hash = EntryHash::try_from(base_address).map_err(|_| {
         wasm_error!(WasmErrorInner::Guest(
             "Base address is not an entry hash".into()
         ))
@@ -132,7 +132,7 @@ pub fn validate_create_link_all_curators(
         .to_app_option()
         .map_err(|e| wasm_error!(e))?
         .ok_or(wasm_error!(WasmErrorInner::Guest(
-            "Linked action must reference an entry".to_string()
+            "Linked action must reference a Curator entry".to_string()
         )))?;
 
     if &action.author != record.action().author() {
@@ -144,7 +144,7 @@ pub fn validate_create_link_all_curators(
     Ok(ValidateCallbackResult::Valid)
 }
 /// Rules
-/// 1. Only the agent that created the link (and therefore created the Curator entry according to the when creating
+/// 1. Only the agent that created the link (and therefore created the Curator entry according to the rules when creating
 ///    those links) can delete the link
 pub fn validate_delete_link_all_curators(
     action: DeleteLink,

@@ -7,6 +7,13 @@ pub fn create_developer_collective(
     let developer_collective_hash = create_entry(&EntryTypes::DeveloperCollective(
         developer_collective.clone(),
     ))?;
+    let path = Path::from("all_developer_collectives");
+    create_link(
+        path.path_entry_hash()?,
+        developer_collective_hash.clone(),
+        LinkTypes::AllDeveloperCollectives,
+        (),
+    )?;
     let record = get(developer_collective_hash.clone(), GetOptions::default())?.ok_or(
         wasm_error!(WasmErrorInner::Guest(
             "Could not find the newly created DeveloperCollective".to_string()
@@ -136,6 +143,18 @@ pub fn delete_developer_collective(
             "Malformed get details response".to_string()
         ))),
     }?;
+    let path = Path::from("all_developer_collectives");
+    let links = get_links(
+        GetLinksInputBuilder::try_new(path.path_entry_hash()?, LinkTypes::AllDeveloperCollectives)?
+            .build(),
+    )?;
+    for link in links {
+        if let Some(hash) = link.target.into_action_hash() {
+            if hash.eq(&original_developer_collective_hash) {
+                delete_link(link.create_link_hash)?;
+            }
+        }
+    }
     delete_entry(original_developer_collective_hash)
 }
 #[hdk_extern]
