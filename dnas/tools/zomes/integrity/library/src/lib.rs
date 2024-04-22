@@ -2,6 +2,8 @@ pub mod curator_to_tools;
 pub use curator_to_tools::*;
 pub mod curator_to_developer_collectives;
 pub use curator_to_developer_collectives::*;
+pub mod developer_collective_to_owner;
+pub use developer_collective_to_owner::*;
 pub mod tool;
 pub use tool::*;
 pub mod contributor_permission;
@@ -27,6 +29,7 @@ pub enum LinkTypes {
     CuratorUpdates,
     DeveloperCollectiveUpdates,
     DeveloperCollectiveToContributorPermissions,
+    DeveloperCollectiveToOwner,
     ContributorToContributorPermissions,
     DeveloperCollectiveToTools,
     ToolUpdates,
@@ -185,6 +188,14 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     tag,
                 )
             }
+            LinkTypes::DeveloperCollectiveToOwner => {
+                validate_create_link_developer_collective_to_owner(
+                    action,
+                    base_address,
+                    target_address,
+                    tag,
+                )
+            }
             LinkTypes::ContributorToContributorPermissions => {
                 validate_create_link_contributor_to_contributor_permissions(
                     action,
@@ -262,6 +273,15 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             }
             LinkTypes::DeveloperCollectiveToContributorPermissions => {
                 validate_delete_link_developer_collective_to_contributor_permissions(
+                    action,
+                    original_action,
+                    base_address,
+                    target_address,
+                    tag,
+                )
+            }
+            LinkTypes::DeveloperCollectiveToOwner => {
+                validate_delete_link_developer_collective_to_owner(
                     action,
                     original_action,
                     base_address,
@@ -608,6 +628,14 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         tag,
                     )
                 }
+                LinkTypes::DeveloperCollectiveToOwner => {
+                    validate_create_link_developer_collective_to_owner(
+                        action,
+                        base_address,
+                        target_address,
+                        tag,
+                    )
+                }
                 LinkTypes::ContributorToContributorPermissions => {
                     validate_create_link_contributor_to_contributor_permissions(
                         action,
@@ -701,6 +729,15 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     }
                     LinkTypes::DeveloperCollectiveToContributorPermissions => {
                         validate_delete_link_developer_collective_to_contributor_permissions(
+                            action,
+                            create_link.clone(),
+                            base_address,
+                            create_link.target_address,
+                            create_link.tag,
+                        )
+                    }
+                    LinkTypes::DeveloperCollectiveToOwner => {
+                        validate_delete_link_developer_collective_to_owner(
                             action,
                             create_link.clone(),
                             base_address,

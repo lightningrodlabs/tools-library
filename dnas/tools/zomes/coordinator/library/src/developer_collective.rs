@@ -14,6 +14,12 @@ pub fn create_developer_collective(
         LinkTypes::AllDeveloperCollectives,
         (),
     )?;
+    create_link(
+        developer_collective_hash.clone(),
+        agent_info()?.agent_initial_pubkey,
+        LinkTypes::DeveloperCollectiveToOwner,
+        (),
+    )?;
     let record = get(developer_collective_hash.clone(), GetOptions::default())?.ok_or(
         wasm_error!(WasmErrorInner::Guest(
             "Could not find the newly created DeveloperCollective".to_string()
@@ -144,11 +150,25 @@ pub fn delete_developer_collective(
         ))),
     }?;
     let path = Path::from("all_developer_collectives");
-    let links = get_links(
+    let all_developer_collective_links = get_links(
         GetLinksInputBuilder::try_new(path.path_entry_hash()?, LinkTypes::AllDeveloperCollectives)?
             .build(),
     )?;
-    for link in links {
+    for link in all_developer_collective_links {
+        if let Some(hash) = link.target.into_action_hash() {
+            if hash.eq(&original_developer_collective_hash) {
+                delete_link(link.create_link_hash)?;
+            }
+        }
+    }
+    let developer_collective_to_owner_links = get_links(
+        GetLinksInputBuilder::try_new(
+            path.path_entry_hash()?,
+            LinkTypes::DeveloperCollectiveToOwner,
+        )?
+        .build(),
+    )?;
+    for link in developer_collective_to_owner_links {
         if let Some(hash) = link.target.into_action_hash() {
             if hash.eq(&original_developer_collective_hash) {
                 delete_link(link.create_link_hash)?;
@@ -188,4 +208,30 @@ pub fn get_oldest_delete_for_developer_collective(
             .cmp(&delete_b.action().timestamp())
     });
     Ok(deletes.first().cloned())
+}
+#[hdk_extern]
+pub fn get_my_developer_collectives(_: ()) -> ExternResult<Vec<Record>> {
+    let links = get_links(
+        GetLinksInputBuilder::try_new(
+            agent_info()?.agent_initial_pubkey,
+            LinkTypes::DeveloperCollectiveToOwner,
+        )?
+        .build(),
+    )?;
+    let get_input: Vec<GetInput> = links
+        .into_iter()
+        .map(|link| {
+            Ok(GetInput::new(
+                link.target
+                    .into_action_hash()
+                    .ok_or(wasm_error!(WasmErrorInner::Guest(
+                        "No action hash associated with link".to_string()
+                    )))?
+                    .into(),
+                GetOptions::default(),
+            ))
+        })
+        .collect::<ExternResult<Vec<GetInput>>>()?;
+    let records = HDK.with(|hdk| hdk.borrow().get(get_input))?;
+    Ok(records.into_iter().flatten().collect())
 }
