@@ -210,7 +210,18 @@ pub fn get_oldest_delete_for_developer_collective(
     Ok(deletes.first().cloned())
 }
 #[hdk_extern]
-pub fn get_my_developer_collectives(_: ()) -> ExternResult<Vec<Record>> {
+pub fn get_my_developer_collective_links(_: ()) -> ExternResult<Vec<Link>> {
+    get_links(
+        GetLinksInputBuilder::try_new(
+            agent_info()?.agent_initial_pubkey,
+            LinkTypes::DeveloperCollectiveToOwner,
+        )?
+        .build(),
+    )
+}
+
+#[hdk_extern]
+pub fn get_my_original_developer_collectives(_: ()) -> ExternResult<Vec<Record>> {
     let links = get_links(
         GetLinksInputBuilder::try_new(
             agent_info()?.agent_initial_pubkey,
