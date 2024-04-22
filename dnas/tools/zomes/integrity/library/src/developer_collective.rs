@@ -7,7 +7,7 @@ pub struct DeveloperCollective {
     pub website: String,
     pub contact: String,
     pub icon: String,
-    pub meta_data: String,
+    pub meta_data: Option<String>,
 }
 pub fn validate_create_developer_collective(
     _action: EntryCreationAction,
