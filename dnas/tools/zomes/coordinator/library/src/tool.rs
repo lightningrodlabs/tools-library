@@ -203,7 +203,7 @@ pub fn get_oldest_delete_for_tool(
     Ok(deletes.first().cloned())
 }
 #[hdk_extern]
-pub fn get_tools_for_developer_collective(
+pub fn get_tool_links_for_developer_collective(
     developer_collective_hash: ActionHash,
 ) -> ExternResult<Vec<Link>> {
     get_links(
@@ -213,6 +213,34 @@ pub fn get_tools_for_developer_collective(
         )?
         .build(),
     )
+}
+#[hdk_extern]
+pub fn get_original_tools_for_developer_collective(
+    developer_collective_hash: ActionHash,
+) -> ExternResult<Vec<Record>> {
+    let links = get_links(
+        GetLinksInputBuilder::try_new(
+            developer_collective_hash,
+            LinkTypes::DeveloperCollectiveToTools,
+        )?
+        .build(),
+    )?;
+    let get_input: Vec<GetInput> = links
+        .into_iter()
+        .map(|link| {
+            Ok(GetInput::new(
+                link.target
+                    .into_action_hash()
+                    .ok_or(wasm_error!(WasmErrorInner::Guest(
+                        "No action hash associated with link".to_string()
+                    )))?
+                    .into(),
+                GetOptions::default(),
+            ))
+        })
+        .collect::<ExternResult<Vec<GetInput>>>()?;
+    let records = HDK.with(|hdk| hdk.borrow().get(get_input))?;
+    Ok(records.into_iter().flatten().collect())
 }
 #[hdk_extern]
 pub fn get_deleted_tools_for_developer_collective(
