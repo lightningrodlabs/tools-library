@@ -64,6 +64,35 @@ pub fn get_contributor_permissions_for_contributor(
     )
 }
 
+#[hdk_extern]
+pub fn get_all_contributor_permissions(
+    developer_collective_hash: ActionHash,
+) -> ExternResult<Vec<Record>> {
+    let links = get_links(
+        GetLinksInputBuilder::try_new(
+            developer_collective_hash,
+            LinkTypes::DeveloperCollectiveToContributorPermissions,
+        )?
+        .build(),
+    )?;
+    let get_input: Vec<GetInput> = links
+        .into_iter()
+        .map(|link| {
+            Ok(GetInput::new(
+                link.target
+                    .into_action_hash()
+                    .ok_or(wasm_error!(WasmErrorInner::Guest(
+                        "No action hash associated with link".to_string()
+                    )))?
+                    .into(),
+                GetOptions::default(),
+            ))
+        })
+        .collect::<ExternResult<Vec<GetInput>>>()?;
+    let records = HDK.with(|hdk| hdk.borrow().get(get_input))?;
+    Ok(records.into_iter().flatten().collect())
+}
+
 /// Gets the least restrictive permission status for a developer collective
 #[hdk_extern]
 pub fn get_my_permission(
@@ -145,7 +174,7 @@ pub fn get_agent_permission(input: GetAgentPermissionInput) -> ExternResult<Opti
                                             }
                                         }
                                     }
-                                    Err(e) => (),
+                                    Err(_e) => (),
                                 }
                             }
                         }
