@@ -15,9 +15,9 @@ pub fn create_developer_collective(
         (),
     )?;
     create_link(
-        developer_collective_hash.clone(),
         agent_info()?.agent_initial_pubkey,
-        LinkTypes::DeveloperCollectiveToOwner,
+        developer_collective_hash.clone(),
+        LinkTypes::OwnerToDeveloperCollective,
         (),
     )?;
     let record = get(developer_collective_hash.clone(), GetOptions::default())?.ok_or(
@@ -161,14 +161,14 @@ pub fn delete_developer_collective(
             }
         }
     }
-    let developer_collective_to_owner_links = get_links(
+    let owner_to_developer_collective_links = get_links(
         GetLinksInputBuilder::try_new(
             path.path_entry_hash()?,
-            LinkTypes::DeveloperCollectiveToOwner,
+            LinkTypes::OwnerToDeveloperCollective,
         )?
         .build(),
     )?;
-    for link in developer_collective_to_owner_links {
+    for link in owner_to_developer_collective_links {
         if let Some(hash) = link.target.into_action_hash() {
             if hash.eq(&original_developer_collective_hash) {
                 delete_link(link.create_link_hash)?;
@@ -214,7 +214,7 @@ pub fn get_my_developer_collective_links(_: ()) -> ExternResult<Vec<Link>> {
     get_links(
         GetLinksInputBuilder::try_new(
             agent_info()?.agent_initial_pubkey,
-            LinkTypes::DeveloperCollectiveToOwner,
+            LinkTypes::OwnerToDeveloperCollective,
         )?
         .build(),
     )
@@ -225,7 +225,7 @@ pub fn get_my_original_developer_collectives(_: ()) -> ExternResult<Vec<Record>>
     let links = get_links(
         GetLinksInputBuilder::try_new(
             agent_info()?.agent_initial_pubkey,
-            LinkTypes::DeveloperCollectiveToOwner,
+            LinkTypes::OwnerToDeveloperCollective,
         )?
         .build(),
     )?;

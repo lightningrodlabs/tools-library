@@ -2,17 +2,17 @@ use hdi::prelude::*;
 /// Rules:
 ///
 /// 1. Only the creator (owner) of the developer collective can create a link to their public key
-pub fn validate_create_link_developer_collective_to_owner(
+pub fn validate_create_link_owner_to_developer_collective(
     action: CreateLink,
     base_address: AnyLinkableHash,
     target_address: AnyLinkableHash,
     _tag: LinkTag,
 ) -> ExternResult<ValidateCallbackResult> {
     let collective_action_hash =
-        base_address
+        target_address
             .into_action_hash()
             .ok_or(wasm_error!(WasmErrorInner::Guest(
-                "No action hash associated with link".to_string()
+                "No action hash associated with link target".to_string()
             )))?;
     let collective_record = must_get_valid_record(collective_action_hash)?;
 
@@ -25,10 +25,10 @@ pub fn validate_create_link_developer_collective_to_owner(
         )))?;
     // Check the entry type for the given action hash
     let owner_agent_key =
-        target_address
+        base_address
             .into_agent_pub_key()
             .ok_or(wasm_error!(WasmErrorInner::Guest(
-                "No agent public key associated with link".to_string()
+                "No agent public key associated with link base".to_string()
             )))?;
 
     if owner_agent_key != action.author {
@@ -37,7 +37,7 @@ pub fn validate_create_link_developer_collective_to_owner(
 
     Ok(ValidateCallbackResult::Valid)
 }
-pub fn validate_delete_link_developer_collective_to_owner(
+pub fn validate_delete_link_owner_to_developer_collective(
     action: DeleteLink,
     original_action: CreateLink,
     _base: AnyLinkableHash,
