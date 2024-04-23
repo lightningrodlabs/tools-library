@@ -19,6 +19,14 @@ pub fn validate_create_contributor_permission(
             ),
         );
     }
+    if record.action().author() == &contributor_permission.for_agent {
+        return Ok(
+            ValidateCallbackResult::Invalid(
+                "The creator has already full owner permissions and cannot issue a contributor permission for themselves."
+                    .into(),
+            ),
+        );
+    }
     let _developer_collective: crate::DeveloperCollective = record
         .entry()
         .to_app_option()
