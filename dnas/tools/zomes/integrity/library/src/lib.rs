@@ -99,69 +99,154 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             _ => Ok(ValidateCallbackResult::Valid),
         },
         FlatOp::RegisterUpdate(update_entry) => match update_entry {
-            OpUpdate::Entry {
-                original_action,
-                original_app_entry,
-                app_entry,
-                action,
-            } => match (app_entry, original_app_entry) {
-                (EntryTypes::Tool(tool), EntryTypes::Tool(original_tool)) => {
-                    validate_update_tool(action, tool, original_action, original_tool)
+            OpUpdate::Entry { app_entry, action } => {
+                let original_action = must_get_action(action.clone().original_action_address)?
+                    .action()
+                    .to_owned();
+                let original_create_action = match EntryCreationAction::try_from(original_action) {
+                    Ok(action) => action,
+                    Err(e) => {
+                        return Ok(ValidateCallbackResult::Invalid(format!(
+                            "Expected to get EntryCreationAction from Action: {e:?}"
+                        )));
+                    }
+                };
+                match app_entry {
+                    EntryTypes::Tool(tool) => {
+                        let original_app_entry =
+                            must_get_valid_record(action.clone().original_action_address)?;
+                        let original_tool = match Tool::try_from(original_app_entry) {
+                            Ok(entry) => entry,
+                            Err(e) => {
+                                return Ok(ValidateCallbackResult::Invalid(format!(
+                                    "Expected to get Tool from Record: {e:?}"
+                                )));
+                            }
+                        };
+                        validate_update_tool(action, tool, original_create_action, original_tool)
+                    }
+                    EntryTypes::ContributorPermission(contributor_permission) => {
+                        let original_app_entry =
+                            must_get_valid_record(action.clone().original_action_address)?;
+                        let original_contributor_permission =
+                            match ContributorPermission::try_from(original_app_entry) {
+                                Ok(entry) => entry,
+                                Err(e) => {
+                                    return Ok(ValidateCallbackResult::Invalid(format!(
+                                        "Expected to get ContributorPermission from Record: {e:?}"
+                                    )));
+                                }
+                            };
+                        validate_update_contributor_permission(
+                            action,
+                            contributor_permission,
+                            original_create_action,
+                            original_contributor_permission,
+                        )
+                    }
+                    EntryTypes::DeveloperCollective(developer_collective) => {
+                        let original_app_entry =
+                            must_get_valid_record(action.clone().original_action_address)?;
+                        let original_developer_collective =
+                            match DeveloperCollective::try_from(original_app_entry) {
+                                Ok(entry) => entry,
+                                Err(e) => {
+                                    return Ok(ValidateCallbackResult::Invalid(format!(
+                                        "Expected to get DeveloperCollective from Record: {e:?}"
+                                    )));
+                                }
+                            };
+                        validate_update_developer_collective(
+                            action,
+                            developer_collective,
+                            original_create_action,
+                            original_developer_collective,
+                        )
+                    }
+                    EntryTypes::Curator(curator) => {
+                        let original_app_entry =
+                            must_get_valid_record(action.clone().original_action_address)?;
+                        let original_curator = match Curator::try_from(original_app_entry) {
+                            Ok(entry) => entry,
+                            Err(e) => {
+                                return Ok(ValidateCallbackResult::Invalid(format!(
+                                    "Expected to get Curator from Record: {e:?}"
+                                )));
+                            }
+                        };
+                        validate_update_curator(
+                            action,
+                            curator,
+                            original_create_action,
+                            original_curator,
+                        )
+                    }
                 }
-                (
-                    EntryTypes::ContributorPermission(contributor_permission),
-                    EntryTypes::ContributorPermission(original_contributor_permission),
-                ) => validate_update_contributor_permission(
-                    action,
-                    contributor_permission,
-                    original_action,
-                    original_contributor_permission,
-                ),
-                (
-                    EntryTypes::DeveloperCollective(developer_collective),
-                    EntryTypes::DeveloperCollective(original_developer_collective),
-                ) => validate_update_developer_collective(
-                    action,
-                    developer_collective,
-                    original_action,
-                    original_developer_collective,
-                ),
-                (EntryTypes::Curator(curator), EntryTypes::Curator(original_curator)) => {
-                    validate_update_curator(action, curator, original_action, original_curator)
-                }
-                _ => Ok(ValidateCallbackResult::Invalid(
-                    "Original and updated entry types must be the same".to_string(),
-                )),
-            },
+            }
             _ => Ok(ValidateCallbackResult::Valid),
         },
-        FlatOp::RegisterDelete(delete_entry) => match delete_entry {
-            OpDelete::Entry {
-                original_action,
-                original_app_entry,
-                action,
-            } => match original_app_entry {
+        FlatOp::RegisterDelete(delete_entry) => {
+            let original_action_hash = delete_entry.clone().action.deletes_address;
+            let original_record = must_get_valid_record(original_action_hash)?;
+            let original_record_action = original_record.action().clone();
+            let original_action = match EntryCreationAction::try_from(original_record_action) {
+                Ok(action) => action,
+                Err(e) => {
+                    return Ok(ValidateCallbackResult::Invalid(format!(
+                        "Expected to get EntryCreationAction from Action: {e:?}"
+                    )));
+                }
+            };
+            let app_entry_type = match original_action.entry_type() {
+                EntryType::App(app_entry_type) => app_entry_type,
+                _ => {
+                    return Ok(ValidateCallbackResult::Valid);
+                }
+            };
+            let entry = match original_record.entry().as_option() {
+                Some(entry) => entry,
+                None => {
+                    return Ok(ValidateCallbackResult::Invalid(
+                        "Original record for a delete must contain an entry".to_string(),
+                    ));
+                }
+            };
+            let original_app_entry = match EntryTypes::deserialize_from_type(
+                app_entry_type.zome_index,
+                app_entry_type.entry_index,
+                entry,
+            )? {
+                Some(app_entry) => app_entry,
+                None => {
+                    return Ok(ValidateCallbackResult::Invalid(
+                        "Original app entry must be one of the defined entry types for this zome"
+                            .to_string(),
+                    ));
+                }
+            };
+            match original_app_entry {
                 EntryTypes::Curator(curator) => {
-                    validate_delete_curator(action, original_action, curator)
+                    validate_delete_curator(delete_entry.clone().action, original_action, curator)
                 }
                 EntryTypes::DeveloperCollective(developer_collective) => {
                     validate_delete_developer_collective(
-                        action,
+                        delete_entry.clone().action,
                         original_action,
                         developer_collective,
                     )
                 }
                 EntryTypes::ContributorPermission(contributor_permission) => {
                     validate_delete_contributor_permission(
-                        action,
+                        delete_entry.clone().action,
                         original_action,
                         contributor_permission,
                     )
                 }
-                EntryTypes::Tool(tool) => validate_delete_tool(action, original_action, tool),
-            },
-            _ => Ok(ValidateCallbackResult::Valid),
-        },
+                EntryTypes::Tool(tool) => {
+                    validate_delete_tool(delete_entry.clone().action, original_action, tool)
+                }
+            }
+        }
         FlatOp::RegisterCreateLink {
             link_type,
             base_address,
