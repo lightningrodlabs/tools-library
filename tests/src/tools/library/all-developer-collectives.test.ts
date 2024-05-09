@@ -28,7 +28,7 @@ test('create a DeveloperCollective and get all developer collectives', async () 
     // Bob gets all developer collectives
     let collectionOutput: Link[] = await bob.cells[0].callZome({
       zome_name: "library",
-      fn_name: "get_all_developer_collectives",
+      fn_name: "get_all_developer_collective_links",
       payload: null
     });
     assert.equal(collectionOutput.length, 0);
@@ -42,7 +42,7 @@ test('create a DeveloperCollective and get all developer collectives', async () 
     // Bob gets all developer collectives again
     collectionOutput = await bob.cells[0].callZome({
       zome_name: "library",
-      fn_name: "get_all_developer_collectives",
+      fn_name: "get_all_developer_collective_links",
       payload: null
     });
     assert.equal(collectionOutput.length, 1);
@@ -60,7 +60,7 @@ test('create a DeveloperCollective and get all developer collectives', async () 
     // Bob gets all developer collectives again
     collectionOutput = await bob.cells[0].callZome({
       zome_name: "library",
-      fn_name: "get_all_developer_collectives",
+      fn_name: "get_all_developer_collective_links",
       payload: null
     });
     assert.equal(collectionOutput.length, 0);

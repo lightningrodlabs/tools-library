@@ -1,18 +1,10 @@
 import { assert, test } from "vitest";
 
-import { runScenario, dhtSync, CallableCell } from '@holochain/tryorama';
+import { runScenario, dhtSync } from '@holochain/tryorama';
 import {
-  NewEntryAction,
-  ActionHash,
   Record,
   Link,
-  CreateLink,
-  DeleteLink,
-  SignedActionHashed,
-  AppBundleSource,
-  fakeActionHash,
-  fakeAgentPubKey,
-  fakeEntryHash
+  encodeHashToBase64,
 } from '@holochain/client';
 import { decode } from '@msgpack/msgpack';
 
@@ -24,7 +16,7 @@ test('create ContributorPermission', async () => {
     // This assumes app bundle created by the `hc app pack` command.
     const testAppPath = process.cwd() + '/../workdir/tools-library.happ';
 
-    // Set up the app to be installed 
+    // Set up the app to be installed
     const appSource = { appBundleSource: { path: testAppPath } };
 
     // Add 2 players with the test app to the Scenario. The returned players
@@ -47,10 +39,10 @@ test('create and read ContributorPermission', async () => {
     // This assumes app bundle created by the `hc app pack` command.
     const testAppPath = process.cwd() + '/../workdir/tools-library.happ';
 
-    // Set up the app to be installed 
+    // Set up the app to be installed
     const appSource = { appBundleSource: { path: testAppPath } };
 
-    // Add 2 players with the test app to the Scenario. The returned players
+    // Add 2 agents with the test app to the Scenario. The returned players
     // can be destructured.
     const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource]);
 
@@ -58,9 +50,9 @@ test('create and read ContributorPermission', async () => {
     // conductor of the scenario.
     await scenario.shareAllAgents();
 
-    const sample = await sampleContributorPermission(alice.cells[0]);
+    const sample = await sampleContributorPermission(alice.cells[0], { for_agent: bob.cells[0].cell_id[1]});
 
-    // Alice creates a ContributorPermission
+    // Alice creates a ContributorPermission for Bob
     const record: Record = await createContributorPermission(alice.cells[0], sample);
     assert.ok(record);
 
@@ -74,6 +66,9 @@ test('create and read ContributorPermission', async () => {
       payload: record.signed_action.hashed.hash,
     });
     assert.deepEqual(sample, decode((createReadOutput.entry as any).Present.entry) as any);
+    // Check that the contributor permission is for Bob
+    assert.equal((decode((createReadOutput.entry as any).Present.entry) as any).for_agent.toString(), bob.cells[0].cell_id[1].toString());
+
 
     // Bob gets the DeveloperCollectives for the new ContributorPermission
     let linksToDeveloperCollectives: Link[] = await bob.cells[0].callZome({
@@ -91,6 +86,8 @@ test('create and read ContributorPermission', async () => {
     });
     assert.equal(linksToContributors.length, 1);
     assert.deepEqual(linksToContributors[0].target, record.signed_action.hashed.hash);
+
+    // TODO check more zome functions like get_my_contributor_permissions etc.
   });
 });
 

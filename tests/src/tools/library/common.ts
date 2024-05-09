@@ -1,5 +1,5 @@
 import { CallableCell } from '@holochain/tryorama';
-import { Record, fakeActionHash } from '@holochain/client';
+import { Record, fakeActionHash, fakeAgentPubKey } from '@holochain/client';
 
 
 
@@ -55,7 +55,7 @@ export async function sampleContributorPermission(cell: CallableCell, partialCon
     return {
         ...{
           for_collective: (await createDeveloperCollective(cell)).signed_action.hashed.hash,
-          for_agent: cell.cell_id[1],
+          for_agent: await fakeAgentPubKey(),
 	  expiry: 1674053334548000,
         },
         ...partialContributorPermission
