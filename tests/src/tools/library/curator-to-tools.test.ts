@@ -19,6 +19,8 @@ import { decode } from '@msgpack/msgpack';
 import { createCurator } from './common.js';
 import { createTool } from './common.js';
 
+test('empty test', () => {});
+
 // test('link a Curator to a Tool', async () => {
 //   await runScenario(async scenario => {
 //     // Construct proper paths for your app.
