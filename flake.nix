@@ -9,7 +9,7 @@
 
     nixpkgs.follows = "holochain-flake/nixpkgs";
     flake-parts.follows = "holochain-flake/flake-parts";
-    
+
   };
 
   outputs = inputs:
@@ -30,7 +30,7 @@
               inputsFrom = [ inputs'.holochain-flake.devShells.holonix ];
               packages = [
                 pkgs.nodejs_20
-                
+
                 # more packages go here
               ];
             };
