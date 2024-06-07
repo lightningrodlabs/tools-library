@@ -1,5 +1,6 @@
 {
   "name": "tools-library-dev",
+  "version": "0.0.4",
   "private": true,
   "workspaces": [
     "ui",
