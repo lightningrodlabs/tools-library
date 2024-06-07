@@ -1,20 +1,57 @@
 use hdk::prelude::*;
 use library_integrity::*;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct CreateToolInput {
+    pub tool: Tool,
+    pub tags: Vec<String>,
+}
+
 #[hdk_extern]
-pub fn create_tool(tool: Tool) -> ExternResult<Record> {
-    let tool_hash = create_entry(&EntryTypes::Tool(tool.clone()))?;
+pub fn create_tool(input: CreateToolInput) -> ExternResult<Record> {
+    let tool_action_hash = create_entry(&EntryTypes::Tool(input.tool.clone()))?;
     create_link(
-        tool.developer_collective.clone(),
-        tool_hash.clone(),
+        input.tool.developer_collective.clone(),
+        tool_action_hash.clone(),
         LinkTypes::DeveloperCollectiveToTools,
         // Tag must contain the permission action hash here:
-        LinkTag::new(tool.permission_hash.get_raw_39()),
+        LinkTag::new(input.tool.permission_hash.get_raw_39()),
     )?;
-    let record = get(tool_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(
+    add_tags_to_tool(AddToolTagsInput {
+        permission_hash: input.tool.permission_hash,
+        tool_action_hash: tool_action_hash.clone(),
+        tags: input.tags,
+    })?;
+    let record = get(tool_action_hash.clone(), GetOptions::default())?.ok_or(wasm_error!(
         WasmErrorInner::Guest("Could not find the newly created Tool".to_string())
     ))?;
     Ok(record)
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AddToolTagsInput {
+    pub permission_hash: ActionHash,
+    pub tool_action_hash: ActionHash,
+    pub tags: Vec<String>,
+}
+
+#[hdk_extern]
+pub fn add_tags_to_tool(input: AddToolTagsInput) -> ExternResult<Vec<ActionHash>> {
+    let mut action_hashes = Vec::new();
+    for tag in input.tags {
+        let tag_path = Path::from(tag);
+        let path_entry_hash = tag_path.path_entry_hash()?;
+        let ah = create_link(
+            input.tool_action_hash.clone(),
+            path_entry_hash,
+            LinkTypes::ToolToTag,
+            LinkTag::new(input.permission_hash.get_raw_39()),
+        )?;
+        action_hashes.push(ah);
+    }
+    Ok(action_hashes)
+}
+
 #[hdk_extern]
 pub fn get_latest_tool(original_tool_hash: ActionHash) -> ExternResult<Option<Record>> {
     let links = get_links(
