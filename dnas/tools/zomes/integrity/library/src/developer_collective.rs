@@ -23,7 +23,7 @@ pub fn validate_create_developer_collective(
 ) -> ExternResult<ValidateCallbackResult> {
     if developer_collective.name.chars().count() > NAME_MAX_LENGTH {
         return Ok(ValidateCallbackResult::Invalid(format!(
-            "Name may be no longer than {NAME_MAX_LENGTH} characters."
+            "Name may not be longer than {NAME_MAX_LENGTH} characters."
         )));
     }
     if developer_collective.icon.chars().count() > ICON_MAX_LENGTH {
