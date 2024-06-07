@@ -21,41 +21,41 @@ pub fn validate_create_developer_collective(
     _action: EntryCreationAction,
     developer_collective: DeveloperCollective,
 ) -> ExternResult<ValidateCallbackResult> {
-    if (developer_collective.name.chars().count() > NAME_MAX_LENGTH) {
+    if developer_collective.name.chars().count() > NAME_MAX_LENGTH {
         return Ok(ValidateCallbackResult::Invalid(format!(
             "Name may be no longer than {NAME_MAX_LENGTH} characters."
         )));
     }
-    if (icon.chars().count() > ICON_MAX_LENGTH) {
+    if developer_collective.icon.chars().count() > ICON_MAX_LENGTH {
         return Ok(ValidateCallbackResult::Invalid(format!(
             "Icon is too large. Must be smaller than 500KB."
         )));
     }
     if let Some(description) = developer_collective.description {
-        if (description.chars().count() > DESCRIPTION_MAX_LENGTH) {
+        if description.chars().count() > DESCRIPTION_MAX_LENGTH {
             return Ok(ValidateCallbackResult::Invalid(format!(
                 "Description may be no longer than {DESCRIPTION_MAX_LENGTH} characters."
             )));
         }
     }
     if let Some(website) = developer_collective.website {
-        if (website.chars().count() > WEBSITE_MAX_LENGTH) {
+        if website.chars().count() > WEBSITE_MAX_LENGTH {
             return Ok(ValidateCallbackResult::Invalid(format!(
                 "Website may be no longer than {WEBSITE_MAX_LENGTH} characters."
             )));
         }
     }
     if let Some(contact) = developer_collective.contact {
-        if (website.chars().count() > CONTACT_MAX_LENGTH) {
+        if contact.chars().count() > CONTACT_MAX_LENGTH {
             return Ok(ValidateCallbackResult::Invalid(format!(
                 "Contact information may be no longer than {CONTACT_MAX_LENGTH} characters."
             )));
         }
     }
     if let Some(meta_data) = developer_collective.meta_data {
-        if (website.chars().count() > META_DATA_MAX_LENGTH) {
+        if meta_data.chars().count() > META_DATA_MAX_LENGTH {
             return Ok(ValidateCallbackResult::Invalid(format!(
-                "Contact information may be no longer than {META_DATA_MAX_LENGTH} characters."
+                "Metadata information may be no longer than {META_DATA_MAX_LENGTH} characters."
             )));
         }
     }
@@ -73,41 +73,41 @@ pub fn validate_update_developer_collective(
                 .into(),
         ));
     }
-    if (developer_collective.name.chars().count() > NAME_MAX_LENGTH) {
+    if developer_collective.name.chars().count() > NAME_MAX_LENGTH {
         return Ok(ValidateCallbackResult::Invalid(format!(
             "Name may be no longer than {NAME_MAX_LENGTH} characters."
         )));
     }
-    if (icon.chars().count() > ICON_MAX_LENGTH) {
+    if developer_collective.icon.chars().count() > ICON_MAX_LENGTH {
         return Ok(ValidateCallbackResult::Invalid(format!(
             "Icon is too large. Must be smaller than 500KB."
         )));
     }
     if let Some(description) = developer_collective.description {
-        if (description.chars().count() > DESCRIPTION_MAX_LENGTH) {
+        if description.chars().count() > DESCRIPTION_MAX_LENGTH {
             return Ok(ValidateCallbackResult::Invalid(format!(
                 "Description may be no longer than {DESCRIPTION_MAX_LENGTH} characters."
             )));
         }
     }
     if let Some(website) = developer_collective.website {
-        if (website.chars().count() > WEBSITE_MAX_LENGTH) {
+        if website.chars().count() > WEBSITE_MAX_LENGTH {
             return Ok(ValidateCallbackResult::Invalid(format!(
                 "Website may be no longer than {WEBSITE_MAX_LENGTH} characters."
             )));
         }
     }
     if let Some(contact) = developer_collective.contact {
-        if (website.chars().count() > CONTACT_MAX_LENGTH) {
+        if contact.chars().count() > CONTACT_MAX_LENGTH {
             return Ok(ValidateCallbackResult::Invalid(format!(
                 "Contact information may be no longer than {CONTACT_MAX_LENGTH} characters."
             )));
         }
     }
     if let Some(meta_data) = developer_collective.meta_data {
-        if (website.chars().count() > META_DATA_MAX_LENGTH) {
+        if meta_data.chars().count() > META_DATA_MAX_LENGTH {
             return Ok(ValidateCallbackResult::Invalid(format!(
-                "Contact information may be no longer than {META_DATA_MAX_LENGTH} characters."
+                "Metadata information may be no longer than {META_DATA_MAX_LENGTH} characters."
             )));
         }
     }
