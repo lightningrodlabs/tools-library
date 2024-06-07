@@ -8,6 +8,8 @@ pub mod tool;
 pub use tool::*;
 pub mod contributor_permission;
 pub use contributor_permission::*;
+pub mod contributor_permission_claim;
+pub use contributor_permission_claim::*;
 pub mod developer_collective;
 pub use developer_collective::*;
 pub mod curator;
@@ -21,24 +23,26 @@ pub enum EntryTypes {
     Curator(Curator),
     DeveloperCollective(DeveloperCollective),
     ContributorPermission(ContributorPermission),
+    ContributorPermissionClaim(ContributorPermissionClaim),
     Tool(Tool),
 }
 #[derive(Serialize, Deserialize)]
 #[hdk_link_types]
 pub enum LinkTypes {
-    CuratorUpdates,
-    DeveloperCollectiveUpdates,
-    DeveloperCollectiveToContributorPermissions,
-    OwnerToDeveloperCollective,
-    ContributorToContributorPermissions,
-    DeveloperCollectiveToTools,
-    ToolUpdates,
-    CuratorToDeveloperCollectives,
-    DeveloperCollectiveToCurators,
-    CuratorToTools,
-    ToolToCurators,
     AllCurators,
     AllDeveloperCollectives,
+    ContributorToContributorPermissions,
+    CuratorToDeveloperCollectives,
+    CuratorToTools,
+    CuratorUpdates,
+    DeveloperCollectiveToContributorPermissions,
+    DeveloperCollectiveToCurators,
+    DeveloperCollectiveToTools,
+    DeveloperCollectiveUpdates,
+    OwnerToDeveloperCollective,
+    ToolUpdates,
+    ToolToCurators,
+    ToolToTag,
 }
 #[hdk_extern]
 pub fn genesis_self_check(_data: GenesisSelfCheckData) -> ExternResult<ValidateCallbackResult> {
@@ -70,6 +74,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         contributor_permission,
                     )
                 }
+                EntryTypes::ContributorPermissionClaim(contributor_permission_claim) => {
+                    validate_create_contributor_permission_claim(
+                        EntryCreationAction::Create(action),
+                        contributor_permission_claim,
+                    )
+                }
                 EntryTypes::Tool(tool) => {
                     validate_create_tool(EntryCreationAction::Create(action), tool)
                 }
@@ -90,6 +100,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     validate_create_contributor_permission(
                         EntryCreationAction::Update(action),
                         contributor_permission,
+                    )
+                }
+                EntryTypes::ContributorPermissionClaim(contributor_permission_claim) => {
+                    validate_create_contributor_permission_claim(
+                        EntryCreationAction::Update(action),
+                        contributor_permission_claim,
                     )
                 }
                 EntryTypes::Tool(tool) => {
@@ -142,6 +158,25 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                             contributor_permission,
                             original_create_action,
                             original_contributor_permission,
+                        )
+                    }
+                    EntryTypes::ContributorPermissionClaim(contributor_permission_claim) => {
+                        let original_app_entry =
+                            must_get_valid_record(action.clone().original_action_address)?;
+                        let original_contributor_permission_claim =
+                            match ContributorPermissionClaim::try_from(original_app_entry) {
+                                Ok(entry) => entry,
+                                Err(e) => {
+                                    return Ok(ValidateCallbackResult::Invalid(format!(
+                                        "Expected to get ContributorPermissionClaim from Record: {e:?}"
+                                    )));
+                                }
+                            };
+                        validate_update_contributor_permission_claim(
+                            action,
+                            contributor_permission_claim,
+                            original_create_action,
+                            original_contributor_permission_claim,
                         )
                     }
                     EntryTypes::DeveloperCollective(developer_collective) => {
@@ -242,6 +277,13 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         contributor_permission,
                     )
                 }
+                EntryTypes::ContributorPermissionClaim(contributor_permission_claim) => {
+                    validate_delete_contributor_permission_claim(
+                        delete_entry.clone().action,
+                        original_action,
+                        contributor_permission_claim,
+                    )
+                }
                 EntryTypes::Tool(tool) => {
                     validate_delete_tool(delete_entry.clone().action, original_action, tool)
                 }
@@ -321,6 +363,9 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             }
             LinkTypes::ToolToCurators => {
                 validate_create_link_tool_to_curators(action, base_address, target_address, tag)
+            }
+            LinkTypes::ToolToTag => {
+                validate_create_link_tool_to_tag(action, base_address, target_address, tag)
             }
             LinkTypes::AllCurators => {
                 validate_create_link_all_curators(action, base_address, target_address, tag)
@@ -431,6 +476,13 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 target_address,
                 tag,
             ),
+            LinkTypes::ToolToTag => validate_delete_link_tool_to_tag(
+                action,
+                original_action,
+                base_address,
+                target_address,
+                tag,
+            ),
             LinkTypes::AllCurators => validate_delete_link_all_curators(
                 action,
                 original_action,
@@ -461,6 +513,12 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                     validate_create_contributor_permission(
                         EntryCreationAction::Create(action),
                         contributor_permission,
+                    )
+                }
+                EntryTypes::ContributorPermissionClaim(contributor_permission_claim) => {
+                    validate_create_contributor_permission_claim(
+                        EntryCreationAction::Create(action),
+                        contributor_permission_claim,
                     )
                 }
                 EntryTypes::Tool(tool) => {
@@ -583,6 +641,42 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                             Ok(result)
                         }
                     }
+                    EntryTypes::ContributorPermissionClaim(contributor_permission_claim) => {
+                        let result = validate_create_contributor_permission_claim(
+                            EntryCreationAction::Update(action.clone()),
+                            contributor_permission_claim.clone(),
+                        )?;
+                        if let ValidateCallbackResult::Valid = result {
+                            let original_contributor_permission_claim: Option<
+                                ContributorPermissionClaim,
+                            > = original_record
+                                .entry()
+                                .to_app_option()
+                                .map_err(|e| wasm_error!(e))?;
+                            let original_contributor_permission_claim =
+                                match original_contributor_permission_claim {
+                                    Some(contributor_permission_claim) => {
+                                        contributor_permission_claim
+                                    }
+                                    None => {
+                                        return Ok(
+                                            ValidateCallbackResult::Invalid(
+                                                "The updated entry type must be the same as the original entry type"
+                                                    .to_string(),
+                                            ),
+                                        );
+                                    }
+                                };
+                            validate_update_contributor_permission_claim(
+                                action,
+                                contributor_permission_claim,
+                                original_action,
+                                original_contributor_permission_claim,
+                            )
+                        } else {
+                            Ok(result)
+                        }
+                    }
                     EntryTypes::Tool(tool) => {
                         let result = validate_create_tool(
                             EntryCreationAction::Update(action.clone()),
@@ -682,6 +776,13 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                             original_contributor_permission,
                         )
                     }
+                    EntryTypes::ContributorPermissionClaim(
+                        original_contributor_permission_claim,
+                    ) => validate_delete_contributor_permission_claim(
+                        action,
+                        original_action,
+                        original_contributor_permission_claim,
+                    ),
                     EntryTypes::Tool(original_tool) => {
                         validate_delete_tool(action, original_action, original_tool)
                     }
@@ -761,6 +862,9 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 }
                 LinkTypes::ToolToCurators => {
                     validate_create_link_tool_to_curators(action, base_address, target_address, tag)
+                }
+                LinkTypes::ToolToTag => {
+                    validate_create_link_tool_to_tag(action, base_address, target_address, tag)
                 }
                 LinkTypes::AllCurators => {
                     validate_create_link_all_curators(action, base_address, target_address, tag)
@@ -881,6 +985,13 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         create_link.tag,
                     ),
                     LinkTypes::ToolToCurators => validate_delete_link_tool_to_curators(
+                        action,
+                        create_link.clone(),
+                        base_address,
+                        create_link.target_address,
+                        create_link.tag,
+                    ),
+                    LinkTypes::ToolToTag => validate_delete_link_tool_to_tag(
                         action,
                         create_link.clone(),
                         base_address,

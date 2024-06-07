@@ -256,6 +256,109 @@ pub fn validate_delete_link_tool_updates(
     )))
 }
 
+/// Rules:
+/// 1. Tool to Tag links can only be created by agents with ContributorPermission for the DeveloperCollective
+///    that the Tool in published under.
+/// 2. Tool tag link must point to an EntryHash
+pub fn validate_create_link_tool_to_tag(
+    action: CreateLink,
+    base_address: AnyLinkableHash,
+    target_address: AnyLinkableHash,
+    tag: LinkTag,
+) -> ExternResult<ValidateCallbackResult> {
+    let permission_action_hash = match ActionHash::from_raw_39(tag.0) {
+        Ok(ah) => ah,
+        Err(e) => {
+            return Ok(ValidateCallbackResult::Invalid(format!(
+                "Link tag does not contain a valid action hash. Conversion failed with error: {}",
+                e
+            )))
+        }
+    };
+
+    let tool_action_hash =
+        base_address
+            .into_action_hash()
+            .ok_or(wasm_error!(WasmErrorInner::Guest(
+                "No action hash associated with link".to_string()
+            )))?;
+
+    let tool_record = must_get_valid_record(tool_action_hash)?;
+
+    let tool: crate::Tool = tool_record
+        .entry()
+        .to_app_option()
+        .map_err(|e| wasm_error!(e))?
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "Linked action must reference an entry".to_string()
+        )))?;
+
+    validate_contributor_permission(
+        permission_action_hash,
+        action.author,
+        tool.developer_collective,
+        action.timestamp,
+    )?;
+
+    // Check that the target is an entry hash
+    match target_address
+        .into_entry_hash()
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "Link target is not an entry hash".to_string()
+        ))) {
+        Ok(_) => Ok(ValidateCallbackResult::Valid),
+        Err(e) => Ok(ValidateCallbackResult::Invalid(e.into())),
+    }
+}
+
+/// Rules:
+/// 1. Tool to Tag links can only be deleted by agents with ContributorPermission for the DeveloperCollective
+///    that the Tool is published under. To provide the permission hash they must have commited a
+///    ContributorPermissionClaim as the previous action
+pub fn validate_delete_link_tool_to_tag(
+    action: DeleteLink,
+    _original_action: CreateLink,
+    base: AnyLinkableHash,
+    _target: AnyLinkableHash,
+    _tag: LinkTag,
+) -> ExternResult<ValidateCallbackResult> {
+    let record = must_get_valid_record(action.prev_action)?;
+
+    let contributor_permission_claim: crate::ContributorPermissionClaim = match record
+        .entry()
+        .to_app_option()
+        .map_err(|e| wasm_error!(e))?
+        .ok_or(wasm_error!(WasmErrorInner::Guest(String::from(
+            "Previous action is not a ContributorPermissionClaim Create action"
+        )))) {
+        Ok(claim) => claim,
+        Err(e) => return Ok(ValidateCallbackResult::Invalid(e.into())),
+    };
+
+    let tool_action_hash = base
+        .into_action_hash()
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "No action hash associated with link".to_string()
+        )))?;
+
+    let tool_record = must_get_valid_record(tool_action_hash)?;
+
+    let tool: crate::Tool = tool_record
+        .entry()
+        .to_app_option()
+        .map_err(|e| wasm_error!(e))?
+        .ok_or(wasm_error!(WasmErrorInner::Guest(
+            "Linked action must reference an entry".to_string()
+        )))?;
+
+    validate_contributor_permission(
+        contributor_permission_claim.permission_hash,
+        action.author,
+        tool.developer_collective,
+        action.timestamp,
+    )
+}
+
 /// Validates for
 pub fn validate_contributor_permission(
     permission_hash: ActionHash,
