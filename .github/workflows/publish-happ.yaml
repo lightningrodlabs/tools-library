@@ -47,7 +47,7 @@ jobs:
         with:
           allowUpdates: true
           artifacts: 'workdir/tools-library.happ'
-          body: '${{HDK_VERSION}}<br>${{HDI_VERSION}}'
+          body: '${{ steps.version.outputs.HDK_VERSION }}<br>${{ steps.version.outputs.HDI_VERSION }}'
           name: v${{ steps.version.outputs.APP_VERSION }}
           tag: v${{ steps.version.outputs.APP_VERSION }}
           prerelease: true
