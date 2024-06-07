@@ -1,27 +1,15 @@
 import { assert, test } from "vitest";
 
-import { runScenario, dhtSync, CallableCell } from "@holochain/tryorama";
+import { runScenario, dhtSync } from "@holochain/tryorama";
 import {
-  NewEntryAction,
-  ActionHash,
   Record,
-  Link,
-  CreateLink,
-  DeleteLink,
-  SignedActionHashed,
-  AppBundleSource,
   fakeActionHash,
-  fakeAgentPubKey,
-  fakeEntryHash,
 } from "@holochain/client";
-import { decode } from "@msgpack/msgpack";
 
 import {
   createContributorPermission,
   createDeveloperCollective,
   createTool,
-  sampleTool,
-  sampleToolUpdate,
 } from "./common.js";
 
 test("Create a developer collective, then create Tool as the creator of the collective", async () => {

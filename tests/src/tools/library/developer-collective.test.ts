@@ -1,26 +1,29 @@
 import { assert, test } from "vitest";
 
-import { runScenario, dhtSync } from '@holochain/tryorama';
+import { runScenario, dhtSync } from "@holochain/tryorama";
+import { Record, SignedActionHashed } from "@holochain/client";
+import { decode } from "@msgpack/msgpack";
+
 import {
-  Record,
-  SignedActionHashed,
-} from '@holochain/client';
-import { decode } from '@msgpack/msgpack';
+  createDeveloperCollective,
+  sampleDeveloperCollective,
+} from "./common.js";
 
-import { createDeveloperCollective, sampleDeveloperCollective } from './common.js';
-
-test('create DeveloperCollective', async () => {
-  await runScenario(async scenario => {
+test("create DeveloperCollective", async () => {
+  await runScenario(async (scenario) => {
     // Construct proper paths for your app.
     // This assumes app bundle created by the `hc app pack` command.
-    const testAppPath = process.cwd() + '/../workdir/tools-library.happ';
+    const testAppPath = process.cwd() + "/../workdir/tools-library.happ";
 
     // Set up the app to be installed
     const appSource = { appBundleSource: { path: testAppPath } };
 
     // Add 2 players with the test app to the Scenario. The returned players
     // can be destructured.
-    const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource]);
+    const [alice, bob] = await scenario.addPlayersWithApps([
+      appSource,
+      appSource,
+    ]);
 
     // Shortcut peer discovery through gossip and register all agents in every
     // conductor of the scenario.
@@ -32,18 +35,21 @@ test('create DeveloperCollective', async () => {
   });
 });
 
-test('create and read DeveloperCollective', async () => {
-  await runScenario(async scenario => {
+test("create and read DeveloperCollective", async () => {
+  await runScenario(async (scenario) => {
     // Construct proper paths for your app.
     // This assumes app bundle created by the `hc app pack` command.
-    const testAppPath = process.cwd() + '/../workdir/tools-library.happ';
+    const testAppPath = process.cwd() + "/../workdir/tools-library.happ";
 
     // Set up the app to be installed
     const appSource = { appBundleSource: { path: testAppPath } };
 
     // Add 2 players with the test app to the Scenario. The returned players
     // can be destructured.
-    const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource]);
+    const [alice, bob] = await scenario.addPlayersWithApps([
+      appSource,
+      appSource,
+    ]);
 
     // Shortcut peer discovery through gossip and register all agents in every
     // conductor of the scenario.
@@ -52,7 +58,10 @@ test('create and read DeveloperCollective', async () => {
     const sample = await sampleDeveloperCollective(alice.cells[0]);
 
     // Alice creates a DeveloperCollective
-    const record: Record = await createDeveloperCollective(alice.cells[0], sample);
+    const record: Record = await createDeveloperCollective(
+      alice.cells[0],
+      sample
+    );
     assert.ok(record);
 
     // Wait for the created entry to be propagated to the other node.
@@ -64,23 +73,28 @@ test('create and read DeveloperCollective', async () => {
       fn_name: "get_original_developer_collective",
       payload: record.signed_action.hashed.hash,
     });
-    assert.deepEqual(sample, decode((createReadOutput.entry as any).Present.entry) as any);
-
+    assert.deepEqual(
+      sample,
+      decode((createReadOutput.entry as any).Present.entry) as any
+    );
   });
 });
 
-test('create and update DeveloperCollective', async () => {
-  await runScenario(async scenario => {
+test("create and update DeveloperCollective", async () => {
+  await runScenario(async (scenario) => {
     // Construct proper paths for your app.
     // This assumes app bundle created by the `hc app pack` command.
-    const testAppPath = process.cwd() + '/../workdir/tools-library.happ';
+    const testAppPath = process.cwd() + "/../workdir/tools-library.happ";
 
     // Set up the app to be installed
     const appSource = { appBundleSource: { path: testAppPath } };
 
     // Add 2 players with the test app to the Scenario. The returned players
     // can be destructured.
-    const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource]);
+    const [alice, bob] = await scenario.addPlayersWithApps([
+      appSource,
+      appSource,
+    ]);
 
     // Shortcut peer discovery through gossip and register all agents in every
     // conductor of the scenario.
@@ -116,13 +130,17 @@ test('create and update DeveloperCollective', async () => {
       fn_name: "get_latest_developer_collective",
       payload: updatedRecord.signed_action.hashed.hash,
     });
-    assert.deepEqual(contentUpdate, decode((readUpdatedOutput0.entry as any).Present.entry) as any);
+    assert.deepEqual(
+      contentUpdate,
+      decode((readUpdatedOutput0.entry as any).Present.entry) as any
+    );
 
     // Alice updates the DeveloperCollective again
     contentUpdate = await sampleDeveloperCollective(alice.cells[0]);
     updateInput = {
       original_developer_collective_hash: originalActionHash,
-      previous_developer_collective_hash: updatedRecord.signed_action.hashed.hash,
+      previous_developer_collective_hash:
+        updatedRecord.signed_action.hashed.hash,
       updated_developer_collective: contentUpdate,
     };
 
@@ -142,7 +160,10 @@ test('create and update DeveloperCollective', async () => {
       fn_name: "get_latest_developer_collective",
       payload: updatedRecord.signed_action.hashed.hash,
     });
-    assert.deepEqual(contentUpdate, decode((readUpdatedOutput1.entry as any).Present.entry) as any);
+    assert.deepEqual(
+      contentUpdate,
+      decode((readUpdatedOutput1.entry as any).Present.entry) as any
+    );
 
     // Bob gets all the revisions for DeveloperCollective
     const revisions: Record[] = await bob.cells[0].callZome({
@@ -151,22 +172,28 @@ test('create and update DeveloperCollective', async () => {
       payload: originalActionHash,
     });
     assert.equal(revisions.length, 3);
-    assert.deepEqual(contentUpdate, decode((revisions[2].entry as any).Present.entry) as any);
+    assert.deepEqual(
+      contentUpdate,
+      decode((revisions[2].entry as any).Present.entry) as any
+    );
   });
 });
 
-test('create and delete DeveloperCollective', async () => {
-  await runScenario(async scenario => {
+test("create and delete DeveloperCollective", async () => {
+  await runScenario(async (scenario) => {
     // Construct proper paths for your app.
     // This assumes app bundle created by the `hc app pack` command.
-    const testAppPath = process.cwd() + '/../workdir/tools-library.happ';
+    const testAppPath = process.cwd() + "/../workdir/tools-library.happ";
 
     // Set up the app to be installed
     const appSource = { appBundleSource: { path: testAppPath } };
 
     // Add 2 players with the test app to the Scenario. The returned players
     // can be destructured.
-    const [alice, bob] = await scenario.addPlayersWithApps([appSource, appSource]);
+    const [alice, bob] = await scenario.addPlayersWithApps([
+      appSource,
+      appSource,
+    ]);
 
     // Shortcut peer discovery through gossip and register all agents in every
     // conductor of the scenario.
@@ -175,11 +202,13 @@ test('create and delete DeveloperCollective', async () => {
     const sample = await sampleDeveloperCollective(alice.cells[0]);
 
     // Alice creates a DeveloperCollective
-    const record: Record = await createDeveloperCollective(alice.cells[0], sample);
+    const record: Record = await createDeveloperCollective(
+      alice.cells[0],
+      sample
+    );
     assert.ok(record);
 
     await dhtSync([alice, bob], alice.cells[0].cell_id[0]);
-
 
     // Alice deletes the DeveloperCollective
     const deleteActionHash = await alice.cells[0].callZome({
@@ -201,13 +230,12 @@ test('create and delete DeveloperCollective', async () => {
     assert.ok(oldestDeleteForDeveloperCollective);
 
     // Bob gets the deletions for DeveloperCollective
-    const deletesForDeveloperCollective: SignedActionHashed[] = await bob.cells[0].callZome({
-      zome_name: "library",
-      fn_name: "get_all_deletes_for_developer_collective",
-      payload: record.signed_action.hashed.hash,
-    });
+    const deletesForDeveloperCollective: SignedActionHashed[] =
+      await bob.cells[0].callZome({
+        zome_name: "library",
+        fn_name: "get_all_deletes_for_developer_collective",
+        payload: record.signed_action.hashed.hash,
+      });
     assert.equal(deletesForDeveloperCollective.length, 1);
-
-
   });
 });

@@ -1,6 +1,6 @@
 import { assert, test } from "vitest";
 
-import { runScenario, dhtSync, CallableCell } from '@holochain/tryorama';
+import { runScenario, dhtSync, CallableCell } from "@holochain/tryorama";
 import {
   NewEntryAction,
   ActionHash,
@@ -12,14 +12,14 @@ import {
   AppBundleSource,
   fakeActionHash,
   fakeAgentPubKey,
-  fakeEntryHash
-} from '@holochain/client';
-import { decode } from '@msgpack/msgpack';
+  fakeEntryHash,
+} from "@holochain/client";
+import { decode } from "@msgpack/msgpack";
 
-import { createCurator } from './common.js';
-import { createTool } from './common.js';
+import { createCurator } from "./common.js";
+import { createTool } from "./common.js";
 
-test('empty test', () => {});
+test("empty test", () => {});
 
 // test('link a Curator to a Tool', async () => {
 //   await runScenario(async scenario => {
@@ -71,7 +71,6 @@ test('empty test', () => {});
 //     });
 //     assert.equal(linksOutput.length, 1);
 //     assert.deepEqual(targetAddress, linksOutput[0].target);
-
 
 //     // Bob gets the links in the inverse direction
 //     linksOutput = await bob.cells[0].callZome({
@@ -127,4 +126,3 @@ test('empty test', () => {});
 
 //   });
 // });
-
