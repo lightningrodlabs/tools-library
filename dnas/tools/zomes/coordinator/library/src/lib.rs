@@ -1,3 +1,4 @@
+pub mod all_agents;
 pub mod all_curators;
 pub mod all_developer_collectives;
 pub mod contributor_permission;
@@ -10,6 +11,13 @@ use hdk::prelude::*;
 use library_integrity::*;
 #[hdk_extern]
 pub fn init(_: ()) -> ExternResult<InitCallbackResult> {
+    let path = Path::from("all_agents");
+    create_link(
+        path.path_entry_hash()?,
+        agent_info()?.agent_initial_pubkey,
+        LinkTypes::AllAgents,
+        (),
+    )?;
     Ok(InitCallbackResult::Pass)
 }
 #[derive(Serialize, Deserialize, Debug)]
