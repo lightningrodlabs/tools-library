@@ -36,7 +36,7 @@ jobs:
         run: |
           echo "APP_VERSION=$(cat package.json | grep -oP '(?<="version": ")[^"]*')" >> $GITHUB_OUTPUT
           echo "HDK_VERSION=$(grep hdk Cargo.toml)" >> $GITHUB_OUTPUT
-          echo "HDI_VERSION=$(grep hdk Cargo.toml)" >> $GITHUB_OUTPUT
+          echo "HDI_VERSION=$(grep hdi Cargo.toml)" >> $GITHUB_OUTPUT
         id: version
 
       - id: create-release
