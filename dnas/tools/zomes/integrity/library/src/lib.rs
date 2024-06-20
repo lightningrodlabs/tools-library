@@ -12,6 +12,8 @@ pub mod developer_collective;
 pub use developer_collective::*;
 pub mod curator;
 pub use curator::*;
+pub mod all_agents;
+pub use all_agents::*;
 use hdi::prelude::*;
 #[derive(Serialize, Deserialize)]
 #[serde(tag = "type")]
@@ -37,6 +39,7 @@ pub enum LinkTypes {
     DeveloperCollectiveToCurators,
     CuratorToTools,
     ToolToCurators,
+    AllAgents,
     AllCurators,
     AllDeveloperCollectives,
 }
@@ -322,6 +325,9 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
             LinkTypes::ToolToCurators => {
                 validate_create_link_tool_to_curators(action, base_address, target_address, tag)
             }
+            LinkTypes::AllAgents => {
+                validate_create_link_all_agents(action, base_address, target_address, tag)
+            }
             LinkTypes::AllCurators => {
                 validate_create_link_all_curators(action, base_address, target_address, tag)
             }
@@ -425,6 +431,13 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 tag,
             ),
             LinkTypes::ToolToCurators => validate_delete_link_tool_to_curators(
+                action,
+                original_action,
+                base_address,
+                target_address,
+                tag,
+            ),
+            LinkTypes::AllAgents => validate_delete_link_all_agents(
                 action,
                 original_action,
                 base_address,
@@ -762,6 +775,9 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                 LinkTypes::ToolToCurators => {
                     validate_create_link_tool_to_curators(action, base_address, target_address, tag)
                 }
+                LinkTypes::AllAgents => {
+                    validate_create_link_all_agents(action, base_address, target_address, tag)
+                }
                 LinkTypes::AllCurators => {
                     validate_create_link_all_curators(action, base_address, target_address, tag)
                 }
@@ -881,6 +897,13 @@ pub fn validate(op: Op) -> ExternResult<ValidateCallbackResult> {
                         create_link.tag,
                     ),
                     LinkTypes::ToolToCurators => validate_delete_link_tool_to_curators(
+                        action,
+                        create_link.clone(),
+                        base_address,
+                        create_link.target_address,
+                        create_link.tag,
+                    ),
+                    LinkTypes::AllAgents => validate_delete_link_all_agents(
                         action,
                         create_link.clone(),
                         base_address,
