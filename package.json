@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@holochain-playground/cli": "^0.1.1",
-    "@holochain/hc-spin": "^0.300.2",
+    "@holochain/hc-spin": "0.400.0-dev.3",
     "concurrently": "^6.2.1",
     "rimraf": "^3.0.2",
     "new-port-cli": "^1.0.0"

@@ -99,7 +99,7 @@ test("Create a developer collective, then try to create a Tool for that collecti
       })
     } catch (e) {
       // Should fail
-      if (e.toString().includes('InvalidCommit error: Awaiting deps')) {
+      if (e.toString().includes('Source chain error: The commit could not be completed but may be retried: DepMissingFromDht')) {
         return;
       }
     }
@@ -264,7 +264,7 @@ test("Try to create a Tool with expired permission", async () => {
         deprecation: "Lorem ipsum dolor sit amet, consectetur adipiscing elit.",
       });
     } catch (e) {
-      if (e.toString().includes("InvalidCommit error: ContributorPermission has expired")) {
+      if (e.toString().includes("InvalidCommit error: Validation failed while committing: ContributorPermission has expired.")) {
         return;
       }
     }
