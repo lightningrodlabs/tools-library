@@ -28,7 +28,7 @@ jobs:
       - name: Install and test
         run: |
           nix-store --gc
-          nix develop --command bash -c "holochain --version && npm run test && npm run build:happ"
+          nix develop --command bash -c "holochain --version && npm i && npm run test && npm run build:happ"
 
       - name: Retrieve version
         run: |
